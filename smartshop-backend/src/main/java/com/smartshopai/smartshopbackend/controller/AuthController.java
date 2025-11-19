@@ -1,13 +1,16 @@
 package com.smartshopai.smartshopbackend.controller;
 
+import com.smartshopai.smartshopbackend.dto.LoginRequest;
 import com.smartshopai.smartshopbackend.dto.RegisterRequest;
 import com.smartshopai.smartshopbackend.service.AuthService;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*") // Cho phép kết nối từ NextJS
-
 public class AuthController {
 
     private final AuthService authService;
@@ -17,7 +20,35 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
-        return authService.register(request);
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        String result = authService.register(request);
+
+        if (result.equals("Email đã tồn tại!")) {
+            return ResponseEntity.badRequest().body(Map.of("error", result));
+        }
+
+        return ResponseEntity.ok(Map.of("message", result));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            return ResponseEntity.ok(authService.login(request));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            // Lấy token từ header
+            String token = authHeader.replace("Bearer ", "");
+
+            return ResponseEntity.ok(authService.getCurrentUser(token));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
     }
 }

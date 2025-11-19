@@ -34,7 +34,7 @@ export default function HomePage() {
           className="mt-10 flex gap-4"
         >
           <Link
-            href="/auth/register"
+            href="/homepage"
             className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition"
           >
             Bắt đầu ngay

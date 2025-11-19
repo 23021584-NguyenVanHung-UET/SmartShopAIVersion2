@@ -1,39 +1,94 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
+    const router = useRouter();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!email.includes("@")) {
-            setError("Email không hợp lệ!");
-            return;
-        }
-        if (password.length < 6) {
-            setError("Mật khẩu phải ít nhất 6 ký tự!");
-            return;
-        }
-
         setError("");
-        console.log("Login...", { email, password });
+
+        if (!email || !password) {
+            setError("Vui lòng điền đầy đủ thông tin!");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const res = await fetch("http://localhost:8080/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            // ❌ Nếu lỗi server / sai mật khẩu / sai email
+            if (!res.ok) {
+                setError(data.error || "Sai email hoặc mật khẩu!");
+                setLoading(false);
+                return;
+            }
+
+            // ⭐ Lưu JWT token + user
+            localStorage.setItem("token", data.token);
+            localStorage.setItem(
+                "user",
+                JSON.stringify({
+                    name: data.name,
+                    email: data.email,
+                })
+            );
+
+            // Hiệu ứng réussite
+            setSuccess(true);
+            setLoading(false);
+
+            // Redirect sau 1.5s
+            setTimeout(() => router.push("/homepage"), 1500);
+
+        } catch (err) {
+            setError("Không thể kết nối tới server!");
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-white p-6">
+        <div className="min-h-screen flex items-center justify-center bg-white p-6 relative">
+
+            {/* Popup đăng nhập thành công */}
+            <AnimatePresence>
+                {success && (
+                    <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.5, opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className="absolute top-10 bg-green-500 text-white font-semibold px-6 py-3 rounded-xl shadow-xl"
+                    >
+                        🎉 Đăng nhập thành công!
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 className="w-full max-w-md bg-white shadow-xl rounded-3xl p-10 border border-gray-200"
             >
-                {/* Logo */}
                 <div className="text-center mb-6">
                     <motion.img
                         src="/images/Logo_HUET.svg.png"
@@ -49,7 +104,8 @@ export default function LoginPage() {
                     <p className="text-gray-600 mt-1">Đăng nhập để tiếp tục</p>
                 </div>
 
-                <form className="space-y-5" onSubmit={handleSubmit}>
+                <form className="space-y-5" onSubmit={handleLogin}>
+                    {/* Email */}
                     <div className="flex flex-col">
                         <label className="text-gray-700 font-medium mb-1">Email</label>
                         <input
@@ -61,6 +117,7 @@ export default function LoginPage() {
                         />
                     </div>
 
+                    {/* Password */}
                     <div className="flex flex-col">
                         <label className="text-gray-700 font-medium mb-1">Mật khẩu</label>
                         <input
@@ -72,25 +129,34 @@ export default function LoginPage() {
                         />
                     </div>
 
+                    {/* Error message */}
                     {error && (
-                        <p className="text-red-500 font-medium text-sm text-center">
-                            {error}
-                        </p>
+                        <p className="text-red-500 font-medium text-sm text-center">{error}</p>
                     )}
 
+                    {/* Submit button */}
                     <motion.button
-                        whileHover={{ scale: 1.03 }}
+                        whileHover={{ scale: loading ? 1 : 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         type="submit"
-                        className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition"
+                        className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition flex items-center justify-center"
+                        disabled={loading}
                     >
-                        Đăng nhập
+                        {loading ? (
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}
+                                className="w-6 h-6 border-4 border-white border-t-transparent rounded-full"
+                            />
+                        ) : (
+                            "Đăng nhập"
+                        )}
                     </motion.button>
                 </form>
 
                 <p className="text-gray-600 text-center mt-6 text-sm">
                     Chưa có tài khoản?{" "}
-                    <Link href="/register" className="font-semibold text-blue-600 hover:underline">
+                    <Link href="/auth/register" className="font-semibold text-blue-600 hover:underline">
                         Đăng ký ngay
                     </Link>
                 </p>
