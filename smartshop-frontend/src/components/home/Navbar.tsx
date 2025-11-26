@@ -9,14 +9,17 @@ type User = {
     email: string;
 };
 
-export default function Navbar() {
+type NavbarProps = {
+    onSearch?: (keyword: string) => void; // 👈 FIX
+};
+
+export default function Navbar({ onSearch }: NavbarProps) {
     const [cartCount] = useState(0);
     const [user, setUser] = useState<User | null>(null);
 
-    // 🔥 Load user từ JWT thông qua API /auth/me
+    // 🔥 Load user từ JWT: GET /auth/me
     useEffect(() => {
         const token = localStorage.getItem("token");
-
         if (!token) return;
 
         const fetchUser = async () => {
@@ -44,16 +47,9 @@ export default function Navbar() {
                     });
                 });
 
-                // Đồng bộ localStorage
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify({
-                        name: data.name,
-                        email: data.email,
-                    })
-                );
+                localStorage.setItem("user", JSON.stringify(data));
             } catch (error) {
-                console.error("Lỗi khi fetch user:", error);
+                console.error("Lỗi khi lấy thông tin user:", error);
             }
         };
 
@@ -61,12 +57,15 @@ export default function Navbar() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem("user");
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setUser(null);
-
-        // Optional redirect
         window.location.href = "/auth/login";
+    };
+
+    // ⭐ Function Search Local
+    const handleSearchChange = (text: string) => {
+        onSearch?.(text); // gọi props nếu có
     };
 
     return (
@@ -84,14 +83,15 @@ export default function Navbar() {
                     <input
                         type="text"
                         placeholder="Tìm kiếm sản phẩm..."
-                        className="bg-transparent ml-2 w-full outline-none text-sm md:text-base"
+                        className="w-full px-4 py-2 bg-transparent outline-none"
+                        onChange={(e) => handleSearchChange(e.target.value)}
                     />
                 </div>
 
-                {/* Right section */}
-                <div className="flex items-center gap-3">
+                {/* Right actions */}
+                <div className="flex items-center gap-4">
 
-                    {/* Nếu chưa login → Hiện Đăng nhập / Đăng ký */}
+                    {/* Chưa login → Login + Register */}
                     {!user && (
                         <div className="hidden md:flex gap-2">
                             <Link
@@ -110,7 +110,7 @@ export default function Navbar() {
                         </div>
                     )}
 
-                    {/* Nếu đã login → hiện tên user + Logout */}
+                    {/* Đã login */}
                     {user && (
                         <div className="hidden md:flex items-center gap-3">
                             <span className="text-gray-700 font-medium">
@@ -126,7 +126,7 @@ export default function Navbar() {
                         </div>
                     )}
 
-                    {/* Cart icon */}
+                    {/* Cart */}
                     <Link href="/cart" className="relative cursor-pointer">
                         <ShoppingCart size={26} className="text-gray-800" />
                         {cartCount > 0 && (

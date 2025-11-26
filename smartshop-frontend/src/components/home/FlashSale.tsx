@@ -1,29 +1,49 @@
 "use client";
 
-const flashProducts = [
-    { name: "iPhone 14 Pro", price: "18,990,000₫", sale: "-20%" },
-    { name: "AirPods Pro 2", price: "4,290,000₫", sale: "-15%" },
-    { name: "Dép Adidas", price: "299,000₫", sale: "-50%" },
-];
+import { useEffect, useState } from "react";
 
 export default function FlashSale() {
-    return (
-        <section className="max-w-7xl mx-auto px-6 mt-10">
-            <h2 className="text-xl font-bold mb-4 text-red-500">Flash Sale ⚡</h2>
+    const [timeLeft, setTimeLeft] = useState({
+        hours: 2,
+        minutes: 30,
+        seconds: 45
+    });
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {flashProducts.map((p, idx) => (
-                    <div
-                        key={idx}
-                        className="bg-white p-4 rounded-xl shadow hover:scale-105 transition cursor-pointer"
-                    >
-                        <div className="h-32 bg-gray-200 rounded-xl"></div>
-                        <p className="mt-2 font-semibold">{p.name}</p>
-                        <p className="text-blue-600">{p.price}</p>
-                        <span className="text-red-500 text-sm">{p.sale}</span>
-                    </div>
-                ))}
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                let { hours, minutes, seconds } = prev;
+
+                if (seconds > 0) seconds--;
+                else {
+                    seconds = 59;
+                    if (minutes > 0) minutes--;
+                    else {
+                        minutes = 59;
+                        if (hours > 0) hours--;
+                    }
+                }
+
+                return { hours, minutes, seconds };
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="max-w-7xl mx-auto mt-10 px-6">
+            <h2 className="text-xl font-bold text-red-600 flex items-center gap-3">
+                🔥 FLASH SALE
+            </h2>
+
+            <div className="flex items-center gap-3 mt-2 text-white">
+                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.hours}</span>
+                :
+                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.minutes}</span>
+                :
+                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.seconds}</span>
             </div>
-        </section>
+        </div>
     );
 }
