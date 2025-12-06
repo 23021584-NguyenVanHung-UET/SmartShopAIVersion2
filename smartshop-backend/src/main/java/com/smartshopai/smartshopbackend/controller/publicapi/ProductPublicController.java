@@ -1,6 +1,8 @@
 package com.smartshopai.smartshopbackend.controller.publicapi;
 
+import com.smartshopai.smartshopbackend.dto.response.ProductResponse;
 import com.smartshopai.smartshopbackend.entity.Product;
+import com.smartshopai.smartshopbackend.mapper.ProductMapper;
 import com.smartshopai.smartshopbackend.service.ProductService;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -26,7 +28,7 @@ public class ProductPublicController {
     }
 
     @GetMapping
-    public Page<Product> getProducts(
+    public Page<ProductResponse> getProducts(
             @RequestParam(value = "q", required = false) String q,
             @RequestParam(value = "category", required = false) String categorySlug,
             @RequestParam(value = "minPrice", required = false) Double minPrice,
@@ -41,16 +43,20 @@ public class ProductPublicController {
             default -> Sort.by("createdAt").descending();
         };
         Pageable pageable = PageRequest.of(page, size, sortBy);
-        return service.search(q, categorySlug, minPrice, maxPrice, pageable);
+        return service.search(q, categorySlug, minPrice, maxPrice, pageable)
+                .map(ProductMapper::toResponse);
     }
 
     @GetMapping("/{id}")
-    public Product getProduct(@PathVariable Long id) {
-        return service.getById(id);
+    public ProductResponse getProduct(@PathVariable Long id) {
+        Product product = service.getById(id);
+        return ProductMapper.toResponse(product);
     }
 
     @GetMapping("/trending")
-    public List<Product> trending() {
-        return service.getLatest(5);
+    public List<ProductResponse> trending() {
+        return service.getLatest(5).stream()
+                .map(ProductMapper::toResponse)
+                .toList();
     }
 }

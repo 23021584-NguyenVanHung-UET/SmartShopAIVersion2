@@ -1,6 +1,7 @@
 package com.smartshopai.smartshopbackend.service;
 
 import com.smartshopai.smartshopbackend.entity.Product;
+import com.smartshopai.smartshopbackend.exception.NotFoundException;
 import com.smartshopai.smartshopbackend.repository.ProductRepository;
 import com.smartshopai.smartshopbackend.repository.spec.ProductSpecifications;
 import java.util.List;
@@ -24,7 +25,7 @@ public class ProductService {
     }
 
     public Product getById(Long id) {
-        return repo.findById(id).orElse(null);
+        return repo.findById(id).orElseThrow(() -> new NotFoundException("Product not found"));
     }
 
     public List<Product> getLatest(int limit) {
