@@ -22,11 +22,6 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         String result = authService.register(request);
-
-        if (result.equals("Email đã tồn tại!")) {
-            return ResponseEntity.badRequest().body(Map.of("error", result));
-        }
-
         return ResponseEntity.ok(Map.of("message", result));
     }
 

@@ -1,5 +1,6 @@
 package com.smartshopai.smartshopbackend.dto;
 
+import com.smartshopai.smartshopbackend.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -10,4 +11,5 @@ public class LoginResponse {
     private String token;
     private String name;
     private String email;
+    private Role role;
 }

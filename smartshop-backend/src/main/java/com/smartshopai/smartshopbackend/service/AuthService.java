@@ -6,6 +6,7 @@ import com.smartshopai.smartshopbackend.dto.RegisterRequest;
 import com.smartshopai.smartshopbackend.entity.User;
 import com.smartshopai.smartshopbackend.repository.UserRepository;
 import com.smartshopai.smartshopbackend.security.JwtService;
+import com.smartshopai.smartshopbackend.exception.UserAlreadyExitsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -25,7 +26,7 @@ public class AuthService {
     public String register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            return "Email đã tồn tại!";
+            throw new UserAlreadyExitsException("Email đã tồn tại!");
         }
 
         User user = User.builder()
@@ -55,7 +56,8 @@ public class AuthService {
                 "Đăng nhập thành công!",
                 token,
                 user.getName(),
-                user.getEmail());
+                user.getEmail(),
+                user.getRole());
     }
 
     public Map<String, Object> getCurrentUser(String token) {

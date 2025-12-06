@@ -1,14 +1,19 @@
 package com.smartshopai.smartshopbackend.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
-
-import java.sql.Timestamp;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "products")
-@Data
-public class Product {
+@Getter
+@Setter
+public class Product extends BaseAuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,10 +30,4 @@ public class Product {
 
     @Column(name = "image_url")
     private String imageUrl;
-
-    @Column(name = "created_at")
-    private Timestamp createdAt = new Timestamp(System.currentTimeMillis());
-
-    @Column(name = "updated_at")
-    private Timestamp updatedAt = new Timestamp(System.currentTimeMillis());
 }
