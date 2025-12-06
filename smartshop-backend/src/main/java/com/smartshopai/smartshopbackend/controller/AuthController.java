@@ -1,10 +1,13 @@
 package com.smartshopai.smartshopbackend.controller;
 
+import com.smartshopai.smartshopbackend.dto.ForgotPasswordRequest;
 import com.smartshopai.smartshopbackend.dto.LoginRequest;
 import com.smartshopai.smartshopbackend.dto.RegisterRequest;
+import com.smartshopai.smartshopbackend.dto.ResetPasswordRequest;
 import com.smartshopai.smartshopbackend.service.AuthService;
 
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -20,13 +23,13 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         String result = authService.register(request);
         return ResponseEntity.ok(Map.of("message", result));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             return ResponseEntity.ok(authService.login(request));
         } catch (Exception e) {
@@ -45,5 +48,15 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.requestPasswordReset(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 }
