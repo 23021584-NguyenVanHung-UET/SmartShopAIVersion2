@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
-import { Search, Filter, MoreVertical, Edit, Trash2, Eye, UserCheck, UserX, Loader2 } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Filter, MoreVertical, Edit, Trash2, Eye, UserCheck, UserX, Loader2, XCircle } from "lucide-react";
 
 interface User {
   id: number;
@@ -28,14 +28,20 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  // Modal states
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<User>>({});
+
   // Tìm kiếm + lọc
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === "all" || 
-                          (filterStatus === "active" && user.active) || 
-                          (filterStatus === "inactive" && !user.active);
+        user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === "all" ||
+        (filterStatus === "active" && user.active) ||
+        (filterStatus === "inactive" && !user.active);
       return matchesSearch && matchesStatus;
     });
   }, [users, searchTerm, filterStatus]);
@@ -58,6 +64,28 @@ export default function UsersPage() {
   const deleteUser = (id: number) => {
     if (confirm("Bạn có chắc muốn xóa người dùng này?")) {
       setUsers(users.filter(u => u.id !== id));
+    }
+  };
+
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user);
+    setViewModalOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData(user);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (selectedUser && editFormData) {
+      setUsers(users.map(u =>
+        u.id === selectedUser.id ? { ...u, ...editFormData } : u
+      ));
+      setEditModalOpen(false);
+      setSelectedUser(null);
+      setEditFormData({});
     }
   };
 
@@ -146,20 +174,18 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        user.role === "ADMIN" 
-                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" 
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${user.role === "ADMIN"
+                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
                           : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                      }`}>
+                        }`}>
                         {user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${
-                        user.active 
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" 
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${user.active
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
                           : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                      }`}>
+                        }`}>
                         {user.active ? <UserCheck size={14} /> : <UserX size={14} />}
                         {user.active ? "Hoạt động" : "Bị khóa"}
                       </span>
@@ -169,25 +195,34 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition">
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition"
+                          title="Xem chi tiết"
+                        >
                           <Eye size={18} />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition">
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition"
+                          title="Chỉnh sửa"
+                        >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => toggleActive(user.id)}
-                          className={`p-2 rounded-lg transition ${
-                            user.active 
-                              ? "hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600" 
+                          className={`p-2 rounded-lg transition ${user.active
+                              ? "hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600"
                               : "hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600"
-                          }`}
+                            }`}
+                          title={user.active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                         >
                           {user.active ? <UserX size={18} /> : <UserCheck size={18} />}
                         </button>
                         <button
                           onClick={() => deleteUser(user.id)}
                           className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition"
+                          title="Xóa người dùng"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -218,11 +253,10 @@ export default function UsersPage() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-4 py-2 rounded-lg transition ${
-                    currentPage === page
+                  className={`px-4 py-2 rounded-lg transition ${currentPage === page
                       ? "bg-blue-600 text-white"
                       : "border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
+                    }`}
                 >
                   {page}
                 </button>
@@ -238,6 +272,127 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* View User Modal */}
+      {viewModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setViewModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Chi tiết người dùng</h2>
+              <button onClick={() => setViewModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl">
+                  {selectedUser.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{selectedUser.name}</p>
+                  <p className="text-gray-600 dark:text-gray-400">{selectedUser.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Vai trò</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedUser.role === "ADMIN"
+                      ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                    }`}>
+                    {selectedUser.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Trạng thái</p>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedUser.active
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    }`}>
+                    {selectedUser.active ? <UserCheck size={14} /> : <UserX size={14} />}
+                    {selectedUser.active ? "Hoạt động" : "Bị khóa"}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Ngày tạo</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{new Date(selectedUser.createdAt).toLocaleDateString("vi-VN")}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onClick={() => setViewModalOpen(false)} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setEditModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Chỉnh sửa người dùng</h2>
+              <button onClick={() => setEditModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên người dùng</label>
+                  <input
+                    type="text"
+                    value={editFormData.name || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={editFormData.email || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Vai trò</label>
+                  <select
+                    value={editFormData.role || 'USER'}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="USER">Người dùng</option>
+                    <option value="ADMIN">Quản trị viên</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
+                  <select
+                    value={editFormData.active ? 'active' : 'inactive'}
+                    onChange={(e) => setEditFormData({ ...editFormData, active: e.target.value === 'active' })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Bị khóa</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onClick={() => setEditModalOpen(false)} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                  Hủy
+                </button>
+                <button onClick={handleSaveEdit} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
-import { Search, Plus, Edit, Trash2, Eye, Package, ToggleLeft, ToggleRight, Filter, Image as ImageIcon, ChevronDown } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Search, Plus, Edit, Trash2, Eye, Package, ToggleLeft, ToggleRight, Filter, Image as ImageIcon, ChevronDown, XCircle } from "lucide-react";
 
 interface Product {
   id: number;
@@ -29,6 +29,12 @@ export default function ProductsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Modal states
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Product>>({});
 
   // Dữ liệu lọc
   const filteredProducts = useMemo(() => {
@@ -59,6 +65,28 @@ export default function ProductsPage() {
   const deleteProduct = (id: number) => {
     if (confirm("Xóa sản phẩm này? Hành động không thể hoàn tác!")) {
       setProducts(products.filter(p => p.id !== id));
+    }
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setViewModalOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditFormData(product);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (selectedProduct && editFormData) {
+      setProducts(products.map(p =>
+        p.id === selectedProduct.id ? { ...p, ...editFormData } : p
+      ));
+      setEditModalOpen(false);
+      setSelectedProduct(null);
+      setEditFormData({});
     }
   };
 
@@ -177,14 +205,14 @@ export default function ProductsPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => alert(`Xem chi tiết sản phẩm: ${product.name}`)}
+                        onClick={() => handleViewProduct(product)}
                         className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition"
                         title="Xem chi tiết"
                       >
                         <Eye size={18} />
                       </button>
                       <button
-                        onClick={() => alert(`Chỉnh sửa sản phẩm: ${product.name}`)}
+                        onClick={() => handleEditProduct(product)}
                         className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition"
                         title="Chỉnh sửa"
                       >
@@ -256,6 +284,141 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
+
+      {/* View Product Modal */}
+      {viewModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setViewModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Chi tiết sản phẩm</h2>
+              <button onClick={() => setViewModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Tên sản phẩm</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-white">{selectedProduct.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Danh mục</p>
+                  <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium mt-1">
+                    {selectedProduct.category}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Trạng thái</p>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedProduct.status === "active"
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      : selectedProduct.status === "inactive"
+                        ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    }`}>
+                    {selectedProduct.status === "active" ? "Đang bán" : selectedProduct.status === "inactive" ? "Tạm ẩn" : "Hết hàng"}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Giá bán</p>
+                  <p className="text-2xl font-bold text-blue-600">{selectedProduct.price.toLocaleString()} ₫</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Tồn kho</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{selectedProduct.stock} sản phẩm</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Ngày tạo</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{new Date(selectedProduct.createdAt).toLocaleDateString("vi-VN")}</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onClick={() => setViewModalOpen(false)} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {editModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setEditModalOpen(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Chỉnh sửa sản phẩm</h2>
+              <button onClick={() => setEditModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên sản phẩm</label>
+                  <input
+                    type="text"
+                    value={editFormData.name || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giá (VND)</label>
+                  <input
+                    type="number"
+                    value={editFormData.price || 0}
+                    onChange={(e) => setEditFormData({ ...editFormData, price: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tồn kho</label>
+                  <input
+                    type="number"
+                    value={editFormData.stock || 0}
+                    onChange={(e) => setEditFormData({ ...editFormData, stock: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Danh mục</label>
+                  <select
+                    value={editFormData.category || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="Áo">Áo</option>
+                    <option value="Quần">Quần</option>
+                    <option value="Giày">Giày</option>
+                    <option value="Phụ kiện">Phụ kiện</option>
+                    <option value="Điện tử">Điện tử</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
+                  <select
+                    value={editFormData.status || 'active'}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="active">Đang bán</option>
+                    <option value="inactive">Tạm ẩn</option>
+                    <option value="out_of_stock">Hết hàng</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onClick={() => setEditModalOpen(false)} className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                  Hủy
+                </button>
+                <button onClick={handleSaveEdit} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition">
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Thêm sản phẩm (đơn giản) */}
       {showAddModal && (
