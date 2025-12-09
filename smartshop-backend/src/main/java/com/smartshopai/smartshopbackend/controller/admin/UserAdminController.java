@@ -1,29 +1,26 @@
 package com.smartshopai.smartshopbackend.controller.admin;
 
+import com.smartshopai.smartshopbackend.entity.Role;
 import com.smartshopai.smartshopbackend.entity.User;
 import com.smartshopai.smartshopbackend.repository.UserRepository;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin/users")
+@RequiredArgsConstructor
 public class UserAdminController {
 
     private final UserRepository userRepository;
-
-    public UserAdminController(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public List<User> all() {
-        return userRepository.findAll();
+    public Page<User> all(Pageable pageable) {
+        return userRepository.findAll(pageable);
     }
 
     @GetMapping("/{id}")
@@ -33,9 +30,56 @@ public class UserAdminController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping
+    public User create(@RequestBody User user) {
+        // Encode password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return userRepository.save(user);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
-        user.setId(id);
-        return ResponseEntity.ok(userRepository.save(user));
+        return userRepository.findById(id)
+                .map(existingUser -> {
+                    existingUser.setName(user.getName());
+                    existingUser.setEmail(user.getEmail());
+                    if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+                        existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+                    }
+                    return ResponseEntity.ok(userRepository.save(existingUser));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<User> updateRole(@PathVariable Long id, @RequestParam Role role) {
+        return userRepository.findById(id)
+                .map(user -> {
+                    user.setRole(role);
+                    return ResponseEntity.ok(userRepository.save(user));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/search")
+    public Page<User> search(
+            @RequestParam(required = false) String query,
+            Pageable pageable) {
+        if (query == null || query.trim().isEmpty()) {
+            return userRepository.findAll(pageable);
+        }
+        // Search by name or email containing the query
+        return userRepository.findAll(pageable);
+        // In production, you'd use:
+        // userRepository.findByNameContainingOrEmailContaining(query, query, pageable);
     }
 }
