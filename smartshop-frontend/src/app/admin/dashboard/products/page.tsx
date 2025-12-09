@@ -164,38 +164,52 @@ export default function ProductsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${
-                      product.status === "active"
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${product.status === "active"
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
                         : product.status === "inactive"
-                        ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                    }`}>
+                          ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                      }`}>
                       {product.status === "active" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       {product.status === "active" ? "Đang bán" : product.status === "inactive" ? "Tạm ẩn" : "Hết hàng"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition">
+                      <button
+                        onClick={() => alert(`Xem chi tiết sản phẩm: ${product.name}`)}
+                        className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition"
+                        title="Xem chi tiết"
+                      >
                         <Eye size={18} />
                       </button>
-                      <button className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition">
+                      <button
+                        onClick={() => alert(`Chỉnh sửa sản phẩm: ${product.name}`)}
+                        className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition"
+                        title="Chỉnh sửa"
+                      >
                         <Edit size={18} />
                       </button>
                       <button
-                        onClick={() => toggleStatus(product.id)}
-                        className={`p-2 rounded-lg transition ${
-                          product.status === "active"
+                        onClick={() => {
+                          toggleStatus(product.id);
+                          console.log(`Toggled status for product ${product.id}`);
+                        }}
+                        className={`p-2 rounded-lg transition ${product.status === "active"
                             ? "hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600"
                             : "hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600"
-                        }`}
+                          }`}
+                        title={product.status === "active" ? "Ẩn sản phẩm" : "Hiển thị sản phẩm"}
                       >
                         {product.status === "active" ? <ToggleLeft size={18} /> : <ToggleRight size={18} />}
                       </button>
                       <button
-                        onClick={() => deleteProduct(product.id)}
+                        onClick={() => {
+                          console.log(`Attempting to delete product ${product.id}`);
+                          deleteProduct(product.id);
+                        }}
                         className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition"
+                        title="Xóa sản phẩm"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -225,9 +239,8 @@ export default function ProductsPage() {
                 <button
                   key={i + 1}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`px-4 py-2 rounded-lg transition ${
-                    currentPage === i + 1 ? "bg-blue-600 text-white" : "border hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
+                  className={`px-4 py-2 rounded-lg transition ${currentPage === i + 1 ? "bg-blue-600 text-white" : "border hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
                 >
                   {i + 1}
                 </button>
