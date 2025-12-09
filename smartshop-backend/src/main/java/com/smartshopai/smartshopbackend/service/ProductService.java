@@ -52,4 +52,13 @@ public class ProductService {
     public void delete(Long id) {
         repo.deleteById(id);
     }
+
+    // Admin convenience methods
+    public Page<Product> findAll(Pageable pageable) {
+        return repo.findAll(pageable);
+    }
+
+    public java.util.Optional<Product> findById(Long id) {
+        return repo.findById(id);
+    }
 }
