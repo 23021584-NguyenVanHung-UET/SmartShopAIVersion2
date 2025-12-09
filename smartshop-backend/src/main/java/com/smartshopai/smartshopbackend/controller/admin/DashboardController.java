@@ -34,17 +34,17 @@ public class DashboardController {
                 .mapToLong(order -> order.getTotalAmount().longValue())
                 .sum();
 
-        // For growth calculations, we'll use simple mock data
-        // In production, you'd compare with previous period
+        // For growth calculations, we'd need to compare with previous period
+        // Setting to 0.0 until historical data tracking is implemented
         return DashboardStatsResponse.builder()
                 .totalRevenue(totalRevenue)
                 .totalOrders(totalOrders)
                 .totalUsers(totalUsers)
                 .totalProducts(totalProducts)
-                .revenueGrowth(12.5)
-                .orderGrowth(8.3)
-                .userGrowth(15.7)
-                .productGrowth(5.2)
+                .revenueGrowth(0.0)
+                .orderGrowth(0.0)
+                .userGrowth(0.0)
+                .productGrowth(0.0)
                 .build();
     }
 
