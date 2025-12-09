@@ -37,18 +37,19 @@ export default function LoginPage() {
 
             // ❌ Nếu lỗi server / sai mật khẩu / sai email
             if (!res.ok) {
-                setError(data.error || "Sai email hoặc mật khẩu!");
+                setError(data.error || data.message || "Sai email hoặc mật khẩu!");
                 setLoading(false);
                 return;
             }
 
-            // ⭐ Lưu JWT token + user
+            // ⭐ Lưu JWT token + user info
             localStorage.setItem("token", data.token);
             localStorage.setItem(
                 "user",
                 JSON.stringify({
                     name: data.name,
                     email: data.email,
+                    role: data.role,
                 })
             );
 
@@ -56,8 +57,14 @@ export default function LoginPage() {
             setSuccess(true);
             setLoading(false);
 
-            // Redirect sau 1.5s
-            setTimeout(() => router.push("/homepage"), 1500);
+            // Redirect based on role
+            setTimeout(() => {
+                if (data.role === "ADMIN") {
+                    router.push("/admin/dashboard");
+                } else {
+                    router.push("/homepage");
+                }
+            }, 1500);
 
         } catch (err) {
             setError("Không thể kết nối tới server!");

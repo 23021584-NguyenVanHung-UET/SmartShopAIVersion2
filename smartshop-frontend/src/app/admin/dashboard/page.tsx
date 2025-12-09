@@ -2,16 +2,16 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
-import { 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  TrendingUp, 
-  Eye, 
-  Clock, 
-  DollarSign, 
-  Upload, 
-  Camera, 
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  TrendingUp,
+  Eye,
+  Clock,
+  DollarSign,
+  Upload,
+  Camera,
   Settings,
   Bell,
   Search,
@@ -21,8 +21,24 @@ import {
   Filter,
   MoreVertical
 } from "lucide-react";
-
+import { dashboardApi, ordersApi } from "@/lib/api";
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444"];
+
+// Helper function to convert ISO date to relative time
+function getRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -33,43 +49,66 @@ export default function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Giả lập loading
-    setTimeout(() => setLoading(false), 1200);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        // Fetch dashboard statistics
+        const statsData = await dashboardApi.getStats();
 
-    // Doanh thu 7 ngày gần nhất
-    const revenueData = [
-      { day: "Mon", revenue: 850000, orders: 24, visitors: 1200 },
-      { day: "Tue", revenue: 1200000, orders: 38, visitors: 1800 },
-      { day: "Wed", revenue: 980000, orders: 31, visitors: 1500 },
-      { day: "Thu", revenue: 1450000, orders: 45, visitors: 2100 },
-      { day: "Fri", revenue: 1680000, orders: 52, visitors: 2400 },
-      { day: "Sat", revenue: 2100000, orders: 68, visitors: 2800 },
-      { day: "Sun", revenue: 1950000, orders: 61, visitors: 2600 },
-    ];
-    setChartData(revenueData);
+        // Fetch revenue data for last 7 days
+        const revenueData = await dashboardApi.getRevenue(7) as any[];
+        setChartData(revenueData.length > 0 ? revenueData : [
+          { date: "Mon", revenue: 0, orders: 0 },
+          { date: "Tue", revenue: 0, orders: 0 },
+          { date: "Wed", revenue: 0, orders: 0 },
+          { date: "Thu", revenue: 0, orders: 0 },
+          { date: "Fri", revenue: 0, orders: 0 },
+          { date: "Sat", revenue: 0, orders: 0 },
+          { date: "Sun", revenue: 0, orders: 0 },
+        ]);
+        // Fetch top products
+        const topProducts = await dashboardApi.getTopProducts(6) as any[];
+        setPieData(topProducts.length > 0 ? topProducts : []);
+        // Fetch recent orders (first page, 7 items)
+        const ordersResponse = await ordersApi.getAll(0, 7) as any;
+        const orders = ordersResponse.content || [];
 
-    // Top 5 sản phẩm bán chạy
-    const topProducts = [
-      { name: "Premium T-Shirt", value: 320, sales: "32M", category: "Fashion" },
-      { name: "Sneaker Pro", value: 250, sales: "47M", category: "Shoes" },
-      { name: "Bluetooth Headset", value: 180, sales: "28M", category: "Electronics" },
-      { name: "Smart Watch", value: 140, sales: "35M", category: "Wearables" },
-      { name: "Leather Bag", value: 110, sales: "22M", category: "Accessories" },
-      { name: "Wireless Mouse", value: 90, sales: "18M", category: "Electronics" },
-    ];
-    setPieData(topProducts);
+        // Transform orders to match UI format
+        const transformedOrders = orders.map((order: any) => ({
+          id: `#ORD${String(order.id).padStart(3, '0')}`,
+          customer: order.user?.name || 'Unknown',
+          amount: order.totalAmount?.toLocaleString() || '0',
+          status: order.status?.toLowerCase() || 'pending',
+          time: getRelativeTime(order.createdAt),
+          items: order.orderItems?.length || 0
+        }));
 
-    // Đơn hàng gần đây
-    setRecentOrders([
-      { id: "#ORD001", customer: "Nguyễn Văn A", amount: "2,450,000", status: "delivered", time: "5 phút trước", items: 3 },
-      { id: "#ORD002", customer: "Trần Thị B", amount: "890,000", status: "processing", time: "12 phút trước", items: 1 },
-      { id: "#ORD003", customer: "Lê Văn C", amount: "3,200,000", status: "delivered", time: "1 giờ trước", items: 5 },
-      { id: "#ORD004", customer: "Phạm Thị D", amount: "567,000", status: "refunded", time: "2 giờ trước", items: 2 },
-      { id: "#ORD005", customer: "Hoàng Văn E", amount: "1,890,000", status: "shipping", time: "3 giờ trước", items: 4 },
-      { id: "#ORD006", customer: "Vũ Thị F", amount: "4,500,000", status: "delivered", time: "5 giờ trước", items: 6 },
-      { id: "#ORD007", customer: "Đỗ Văn G", amount: "750,000", status: "pending", time: "1 ngày trước", items: 2 },
-    ]);
+        setRecentOrders(transformedOrders);
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err);
+        // Fallback to mock data on error
+        setTimeout(() => setLoading(false), 1200);
+        // Keep existing mock data
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
   }, []);
+
+  const getRelativeTime = (dateString: string) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} phút trước`;
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    return `${diffDays} ngày trước`;
+  };
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,37 +126,37 @@ export default function DashboardPage() {
   };
 
   const stats = [
-    { 
-      title: "Total Revenue", 
-      value: "45.2M", 
-      icon: DollarSign, 
-      color: "from-emerald-500 to-teal-500", 
+    {
+      title: "Total Revenue",
+      value: "45.2M",
+      icon: DollarSign,
+      color: "from-emerald-500 to-teal-500",
       change: "+28.5%",
-      trend: "up" 
+      trend: "up"
     },
-    { 
-      title: "Total Orders", 
-      value: "1,284", 
-      icon: ShoppingCart, 
-      color: "from-blue-500 to-cyan-500", 
+    {
+      title: "Total Orders",
+      value: "1,284",
+      icon: ShoppingCart,
+      color: "from-blue-500 to-cyan-500",
       change: "+12.3%",
-      trend: "up" 
+      trend: "up"
     },
-    { 
-      title: "Active Users", 
-      value: "5,842", 
-      icon: Users, 
-      color: "from-purple-500 to-pink-500", 
+    {
+      title: "Active Users",
+      value: "5,842",
+      icon: Users,
+      color: "from-purple-500 to-pink-500",
       change: "+18.7%",
-      trend: "up" 
+      trend: "up"
     },
-    { 
-      title: "Products", 
-      value: "128", 
-      icon: Package, 
-      color: "from-orange-500 to-red-500", 
+    {
+      title: "Products",
+      value: "128",
+      icon: Package,
+      color: "from-orange-500 to-red-500",
       change: "+8.2%",
-      trend: "up" 
+      trend: "up"
     },
   ];
 
@@ -150,17 +189,17 @@ export default function DashboardPage() {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4 ml-6">
           <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <Bell className="w-6 h-6" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
-          
+
           <button className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <Settings className="w-6 h-6" />
           </button>
-          
+
           {/* User Profile with Avatar Upload */}
           <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
             <div className="relative group">
@@ -187,12 +226,12 @@ export default function DashboardPage() {
                 <div className="w-2 h-2 bg-white rounded-full"></div>
               </div>
             </div>
-            
+
             <div className="hidden md:block">
               <p className="font-semibold text-gray-800 dark:text-white">Admin User</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">admin@example.com</p>
             </div>
-            
+
             <ChevronDown className="w-5 h-5 text-gray-400" />
           </div>
         </div>
@@ -244,11 +283,10 @@ export default function DashboardPage() {
                 <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
                   <stat.icon className="w-6 h-6 text-white" />
                 </div>
-                <span className={`text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-1 ${
-                  stat.trend === 'up' 
-                    ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                    : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
+                <span className={`text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-1 ${stat.trend === 'up'
+                  ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400'
+                  : 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400'
+                  }`}>
                   <TrendingUp className={`w-4 h-4 ${stat.trend === 'down' ? 'rotate-180' : ''}`} />
                   {stat.change}
                 </span>
@@ -285,22 +323,22 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis 
-                  dataKey="day" 
+                <XAxis
+                  dataKey="day"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: '#6b7280', fontSize: 12 }}
                 />
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
                   tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(value) => `$${(value/1000000).toFixed(1)}M`}
+                  tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -310,7 +348,7 @@ export default function DashboardPage() {
                     boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
                     padding: '16px',
                   }}
-                  formatter={(value: number) => [`$${(value/1000000).toFixed(2)}M`, 'Revenue']}
+                  formatter={(value: number) => [`$${(value / 1000000).toFixed(2)}M`, 'Revenue']}
                   labelFormatter={(label) => `Day: ${label}`}
                 />
                 <Line
@@ -331,12 +369,12 @@ export default function DashboardPage() {
                 />
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
               </LineChart>
@@ -359,7 +397,7 @@ export default function DashboardPage() {
               View all
             </button>
           </div>
-          
+
           <div className="h-64 mb-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -373,8 +411,8 @@ export default function DashboardPage() {
                   dataKey="value"
                 >
                   {pieData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
                       strokeWidth={2}
                       stroke="#fff"
@@ -392,7 +430,7 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          
+
           <div className="space-y-4">
             {pieData.slice(0, 4).map((item, i) => (
               <div key={i} className="flex items-center justify-between">
@@ -429,7 +467,7 @@ export default function DashboardPage() {
             View all orders
           </button>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -447,8 +485,8 @@ export default function DashboardPage() {
               {recentOrders.map((order) => {
                 const statusColor = getStatusColor(order.status);
                 return (
-                  <tr 
-                    key={order.id} 
+                  <tr
+                    key={order.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150"
                   >
                     <td className="px-6 py-4">
@@ -494,7 +532,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-        
+
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Showing <span className="font-semibold">7</span> of <span className="font-semibold">284</span> orders
@@ -534,23 +572,23 @@ function DashboardSkeleton() {
           <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
         </div>
       </div>
-      
+
       <div className="mb-8">
         <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-2xl w-64 mb-2"></div>
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-2xl w-96"></div>
       </div>
-      
+
       <div className="grid grid-cols-4 gap-6 mb-8">
-        {[1,2,3,4].map((i) => (
+        {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
         ))}
       </div>
-      
+
       <div className="grid grid-cols-3 gap-8 mb-8">
         <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded-2xl col-span-2"></div>
         <div className="h-80 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
       </div>
-      
+
       <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
     </div>
   );

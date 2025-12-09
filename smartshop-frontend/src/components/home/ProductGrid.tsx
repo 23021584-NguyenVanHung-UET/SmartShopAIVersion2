@@ -11,7 +11,22 @@ export default function ProductGrid() {
     const { addToCart } = useCart();
 
     useEffect(() => {
-        getProducts().then(res => setProducts(res));
+        getProducts()
+            .then(res => {
+                // Handle both array and paginated response
+                if (Array.isArray(res)) {
+                    setProducts(res);
+                } else if (res && typeof res === 'object' && 'content' in res) {
+                    // Paginated response
+                    setProducts((res as any).content || []);
+                } else {
+                    setProducts([]);
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching products:', err);
+                setProducts([]); // Set empty array on error
+            });
     }, []);
 
     return (
