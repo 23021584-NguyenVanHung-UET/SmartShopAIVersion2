@@ -41,7 +41,11 @@ export default function OrdersPage() {
                                             <p className="text-sm text-gray-500">Mã đơn #{order.id}</p>
                                             <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
                                         </div>
-                                        <span className="text-sm font-semibold text-blue-600">{order.status}</span>
+                                        <div className="text-right">
+                                            <p className="text-sm font-semibold text-blue-600">{order.status}</p>
+                                            <p className="text-[12px] text-gray-500">{order.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản" : "COD"}</p>
+                                            <p className="text-[12px] text-gray-500">Thanh toán: {order.paymentStatus}</p>
+                                        </div>
                                     </div>
                                     <div className="space-y-1 text-sm text-gray-700">
                                         {order.items.map(it => (

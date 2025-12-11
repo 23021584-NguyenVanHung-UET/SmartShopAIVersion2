@@ -1,6 +1,8 @@
 package com.smartshopai.smartshopbackend.dto.response;
 
 import com.smartshopai.smartshopbackend.entity.OrderStatus;
+import com.smartshopai.smartshopbackend.entity.PaymentMethod;
+import com.smartshopai.smartshopbackend.entity.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -12,6 +14,9 @@ import lombok.Getter;
 public class OrderResponse {
     private Long id;
     private OrderStatus status;
+    private PaymentMethod paymentMethod;
+    private PaymentStatus paymentStatus;
+    private String paymentCode;
     private BigDecimal totalAmount;
     private Instant createdAt;
     private String shippingName;

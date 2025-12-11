@@ -56,6 +56,10 @@ export default function OrderDetailPage() {
                                 <span className="font-semibold">#{order.id}</span>
                             </div>
                             <div className="flex justify-between">
+                                <span>Thanh toán:</span>
+                                <span className="font-semibold">{order.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản" : "COD"} ({order.paymentStatus})</span>
+                            </div>
+                            <div className="flex justify-between">
                                 <span>Trạng thái:</span>
                                 <span className="font-semibold">{order.status}</span>
                             </div>
@@ -63,6 +67,12 @@ export default function OrderDetailPage() {
                                 <span>Tổng tiền:</span>
                                 <span className="font-semibold">{order.totalAmount.toLocaleString()}đ</span>
                             </div>
+                            {order.paymentMethod === "BANK_TRANSFER" && (
+                                <div className="flex justify-between">
+                                    <span>Mã chuyển khoản:</span>
+                                    <span className="font-semibold">{order.paymentCode}</span>
+                                </div>
+                            )}
                             {(order.shippingName || order.shippingAddress) && (
                                 <div className="pt-2 border-t">
                                     <p className="font-semibold mb-1">Giao tới:</p>
@@ -89,6 +99,14 @@ export default function OrderDetailPage() {
                                 </div>
                             </div>
                             <div className="flex gap-4 pt-2">
+                                {order.paymentMethod === "BANK_TRANSFER" && (
+                                    <button
+                                        onClick={() => router.push(`/orders/${order.id}/payment`)}
+                                        className="text-blue-600 underline"
+                                    >
+                                        Hướng dẫn chuyển khoản
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => router.push("/orders")}
                                     className="text-blue-600 underline"

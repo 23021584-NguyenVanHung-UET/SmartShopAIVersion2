@@ -5,6 +5,8 @@ import com.smartshopai.smartshopbackend.dto.request.CreateOrderRequest;
 import com.smartshopai.smartshopbackend.entity.Order;
 import com.smartshopai.smartshopbackend.entity.OrderItem;
 import com.smartshopai.smartshopbackend.entity.OrderStatus;
+import com.smartshopai.smartshopbackend.entity.PaymentMethod;
+import com.smartshopai.smartshopbackend.entity.PaymentStatus;
 import com.smartshopai.smartshopbackend.entity.User;
 import com.smartshopai.smartshopbackend.exception.NotFoundException;
 import com.smartshopai.smartshopbackend.repository.OrderItemRepository;
@@ -69,6 +71,26 @@ public class OrderService {
         order.setShippingCity(defaultIfBlank(request.getShippingCity(), user.getCity()));
         order.setShippingNote(request.getNote());
 
+        PaymentMethod method = request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.COD;
+        order.setPaymentMethod(method);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+        order.setStatus(OrderStatus.PENDING);
+
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order confirmBankTransfer(Long orderId, String code) {
+        Order order = orderRepository.findByIdAndPaymentCode(orderId, code)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hoặc mã không hợp lệ"));
+        if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) {
+            throw new IllegalArgumentException("Đơn hàng không dùng chuyển khoản");
+        }
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            return order;
+        }
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setStatus(OrderStatus.PAID);
         return orderRepository.save(order);
     }
 

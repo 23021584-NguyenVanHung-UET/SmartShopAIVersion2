@@ -13,7 +13,7 @@ export default function CheckoutPage() {
     const router = useRouter();
 
     const [shippingMethod, setShippingMethod] = useState("standard");
-    const [paymentMethod, setPaymentMethod] = useState("cod");
+    const [paymentMethod, setPaymentMethod] = useState<"COD" | "BANK_TRANSFER">("COD");
     const [placing, setPlacing] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
@@ -62,8 +62,8 @@ export default function CheckoutPage() {
             return;
         }
 
-        if (!shipping.name || !shipping.phone || !shipping.address) {
-            setMessage("Vui lòng nhập đầy đủ tên, số điện thoại và địa chỉ giao hàng.");
+        if (!shipping.name || !shipping.phone || !shipping.address || !shipping.ward || !shipping.district || !shipping.city) {
+            setMessage("Vui lòng nhập đầy đủ thông tin giao hàng.");
             return;
         }
 
@@ -77,6 +77,7 @@ export default function CheckoutPage() {
                     productId: item.id,
                     quantity: item.quantity,
                 })),
+                paymentMethod,
                 shippingName: shipping.name,
                 shippingPhone: shipping.phone,
                 shippingAddress: shipping.address,
@@ -91,7 +92,11 @@ export default function CheckoutPage() {
             } catch {
                 // ignore storage error
             }
-            router.push(`/orders/${order.id}`);
+            if (order.paymentMethod === "BANK_TRANSFER") {
+                router.push(`/orders/${order.id}/payment`);
+            } else {
+                router.push(`/orders/${order.id}`);
+            }
         } catch (err: any) {
             const msg = err?.response?.data?.message || "Đặt hàng thất bại. Vui lòng đăng nhập và thử lại.";
             setMessage(msg);
@@ -216,18 +221,8 @@ export default function CheckoutPage() {
                             <input
                                 type="radio"
                                 name="payment"
-                                checked={paymentMethod === "cod"}
-                                onChange={() => setPaymentMethod("cod")}
-                            />
-                        </label>
-
-                        <label className="flex justify-between p-3 border rounded-lg cursor-pointer">
-                            <span>Thanh toán qua ví Momo</span>
-                            <input
-                                type="radio"
-                                name="payment"
-                                checked={paymentMethod === "momo"}
-                                onChange={() => setPaymentMethod("momo")}
+                                checked={paymentMethod === "COD"}
+                                onChange={() => setPaymentMethod("COD")}
                             />
                         </label>
 
@@ -236,8 +231,8 @@ export default function CheckoutPage() {
                             <input
                                 type="radio"
                                 name="payment"
-                                checked={paymentMethod === "bank"}
-                                onChange={() => setPaymentMethod("bank")}
+                                checked={paymentMethod === "BANK_TRANSFER"}
+                                onChange={() => setPaymentMethod("BANK_TRANSFER")}
                             />
                         </label>
                     </div>

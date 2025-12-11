@@ -15,3 +15,10 @@ export const getOrderById = async (id: number): Promise<Order> => {
     const res = await axios.get<Order>(`/public/orders/${id}`);
     return res.data;
 };
+
+export const confirmBankTransfer = async (orderId: number, code: string): Promise<Order> => {
+    const res = await axios.get<Order>(`/public/payments/confirm`, {
+        params: { orderId, code },
+    });
+    return res.data;
+};

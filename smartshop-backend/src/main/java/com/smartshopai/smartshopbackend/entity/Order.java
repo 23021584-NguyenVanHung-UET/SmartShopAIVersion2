@@ -16,8 +16,11 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import com.smartshopai.smartshopbackend.entity.PaymentMethod;
+import com.smartshopai.smartshopbackend.entity.PaymentStatus;
 
 @Entity
 @Table(name = "orders")
@@ -47,6 +50,17 @@ public class Order extends BaseAuditEntity {
     private String shippingDistrict;
     private String shippingCity;
     private String shippingNote;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false)
+    private PaymentMethod paymentMethod = PaymentMethod.COD;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    @Column(name = "payment_code", length = 64)
+    private String paymentCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();

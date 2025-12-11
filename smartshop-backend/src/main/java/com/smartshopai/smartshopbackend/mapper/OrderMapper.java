@@ -19,6 +19,9 @@ public class OrderMapper {
         return new OrderResponse(
                 order.getId(),
                 order.getStatus(),
+                order.getPaymentMethod(),
+                order.getPaymentStatus(),
+                order.getPaymentCode(),
                 order.getTotalAmount(),
                 order.getCreatedAt(),
                 order.getShippingName(),

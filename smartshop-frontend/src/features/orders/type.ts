@@ -8,6 +8,9 @@ export interface OrderItem {
 export interface Order {
     id: number;
     status: string;
+    paymentMethod: "COD" | "BANK_TRANSFER";
+    paymentStatus: "PENDING" | "PAID";
+    paymentCode?: string;
     totalAmount: number;
     createdAt: string;
     shippingName?: string;
@@ -26,11 +29,12 @@ export interface CreateOrderPayload {
         quantity: number;
     }[];
 
+    paymentMethod: "COD" | "BANK_TRANSFER";
     shippingName: string;
     shippingPhone: string;
     shippingAddress: string;
-    shippingWard?: string;
-    shippingDistrict?: string;
-    shippingCity?: string;
+    shippingWard: string;
+    shippingDistrict: string;
+    shippingCity: string;
     note?: string;
 }
