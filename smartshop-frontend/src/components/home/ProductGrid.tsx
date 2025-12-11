@@ -2,58 +2,45 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { getProducts } from "@/features/products/services/productService";
 import { Product } from "@/features/products/type";
 import { useCart } from "@/features/cart/hooks/useCart";
-import { getCategories } from "@/features/categories/services/categoryService";
-import { Category } from "@/features/categories/type";
 
-export default function ProductGrid() {
+type Props = {
+    selectedCategorySlug: string;
+    selectedCategoryName?: string;
+};
+
+export default function ProductGrid({ selectedCategorySlug, selectedCategoryName }: Props) {
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [loading, setLoading] = useState(false);
     const [addedId, setAddedId] = useState<number | null>(null);
     const { addToCart } = useCart();
 
     useEffect(() => {
-        getCategories()
-            .then(setCategories)
-            .catch(() => setCategories([]));
-    }, []);
-
-    useEffect(() => {
         setLoading(true);
         getProducts(
-            selectedCategory === "all"
+            selectedCategorySlug === "all" || !selectedCategorySlug
                 ? {}
-                : { category: selectedCategory }
+                : { category: selectedCategorySlug }
         )
             .then(res => setProducts(res))
             .catch(() => setProducts([]))
             .finally(() => setLoading(false));
-    }, [selectedCategory]);
+    }, [selectedCategorySlug]);
 
     return (
         <div className="max-w-7xl mx-auto px-6 mt-10">
-            <h2 className="text-2xl font-bold mb-6 text-blue-600">Sản phẩm nổi bật</h2>
-
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-                <button
-                    onClick={() => setSelectedCategory("all")}
-                    className={`px-3 py-1 rounded-full border ${selectedCategory === "all" ? "bg-blue-600 text-white" : "bg-white"}`}
-                >
-                    Tất cả
-                </button>
-                {categories.map((c) => (
-                    <button
-                        key={c.id}
-                        onClick={() => setSelectedCategory(c.slug)}
-                        className={`px-3 py-1 rounded-full border ${selectedCategory === c.slug ? "bg-blue-600 text-white" : "bg-white"}`}
-                    >
-                        {c.name}
-                    </button>
-                ))}
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h2 className="text-2xl font-bold text-blue-600">Sản phẩm nổi bật</h2>
+                    <p className="text-sm text-gray-500 mt-1">
+                        {selectedCategorySlug === "all"
+                            ? "Hiển thị tất cả danh mục"
+                            : `Danh mục: ${selectedCategoryName ?? "Đang tải..."}`}
+                    </p>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -64,15 +51,19 @@ export default function ProductGrid() {
                 ) : (
                     products.map((p) => (
                         <div key={p.id} className="bg-white shadow rounded-lg p-4 hover:shadow-md transition">
-                            <Image
-                                src={p.imageUrl}
-                                width={200}
-                                height={200}
-                                alt={p.name}
-                                className="rounded-lg object-cover w-full h-40"
-                            />
+                            <Link href={`/product/${p.id}`}>
+                                <Image
+                                    src={p.imageUrl}
+                                    width={200}
+                                    height={200}
+                                    alt={p.name}
+                                    className="rounded-lg object-cover w-full h-40"
+                                />
+                            </Link>
 
-                            <h3 className="font-medium mt-3 line-clamp-2">{p.name}</h3>
+                            <Link href={`/product/${p.id}`}>
+                                <h3 className="font-medium mt-3 line-clamp-2 hover:text-blue-600">{p.name}</h3>
+                            </Link>
 
                             <p className="text-blue-600 font-bold mt-2">
                                 {p.price.toLocaleString()}đ

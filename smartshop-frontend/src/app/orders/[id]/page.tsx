@@ -63,6 +63,20 @@ export default function OrderDetailPage() {
                                 <span>Tổng tiền:</span>
                                 <span className="font-semibold">{order.totalAmount.toLocaleString()}đ</span>
                             </div>
+                            {(order.shippingName || order.shippingAddress) && (
+                                <div className="pt-2 border-t">
+                                    <p className="font-semibold mb-1">Giao tới:</p>
+                                    <p>{order.shippingName}</p>
+                                    <p>{order.shippingPhone}</p>
+                                    <p>
+                                        {order.shippingAddress}
+                                        {order.shippingWard ? `, ${order.shippingWard}` : ""}
+                                        {order.shippingDistrict ? `, ${order.shippingDistrict}` : ""}
+                                        {order.shippingCity ? `, ${order.shippingCity}` : ""}
+                                    </p>
+                                    {order.shippingNote && <p className="text-sm text-gray-600">Ghi chú: {order.shippingNote}</p>}
+                                </div>
+                            )}
                             <div>
                                 <p className="font-semibold mb-1">Sản phẩm:</p>
                                 <div className="space-y-1 text-sm">

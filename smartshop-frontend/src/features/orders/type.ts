@@ -10,6 +10,13 @@ export interface Order {
     status: string;
     totalAmount: number;
     createdAt: string;
+    shippingName?: string;
+    shippingPhone?: string;
+    shippingAddress?: string;
+    shippingWard?: string;
+    shippingDistrict?: string;
+    shippingCity?: string;
+    shippingNote?: string;
     items: OrderItem[];
 }
 
@@ -18,4 +25,12 @@ export interface CreateOrderPayload {
         productId: number;
         quantity: number;
     }[];
+
+    shippingName: string;
+    shippingPhone: string;
+    shippingAddress: string;
+    shippingWard?: string;
+    shippingDistrict?: string;
+    shippingCity?: string;
+    note?: string;
 }

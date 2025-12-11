@@ -40,6 +40,14 @@ public class Order extends BaseAuditEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    private String shippingName;
+    private String shippingPhone;
+    private String shippingAddress;
+    private String shippingWard;
+    private String shippingDistrict;
+    private String shippingCity;
+    private String shippingNote;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 }

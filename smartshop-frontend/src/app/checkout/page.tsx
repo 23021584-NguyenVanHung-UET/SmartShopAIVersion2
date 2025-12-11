@@ -1,11 +1,12 @@
 "use client";
 
 import { useCart } from "@/features/cart/hooks/useCart";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createOrder } from "@/features/orders/services/orderService";
 import { useRouter } from "next/navigation";
 import { Order } from "@/features/orders/type";
+import { getProfile } from "@/features/profile/services/profileService";
 
 export default function CheckoutPage() {
     const { cart, total, clearCart } = useCart();
@@ -16,13 +17,53 @@ export default function CheckoutPage() {
     const [placing, setPlacing] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+    const [shipping, setShipping] = useState({
+        name: "",
+        phone: "",
+        address: "",
+        ward: "",
+        district: "",
+        city: "",
+        note: "",
+    });
 
     const shippingFee = shippingMethod === "express" ? 35000 : 20000;
     const finalTotal = total + shippingFee;
+    const shippingMissing =
+        !shipping.name.trim() ||
+        !shipping.phone.trim() ||
+        !shipping.address.trim() ||
+        !shipping.ward.trim() ||
+        !shipping.district.trim() ||
+        !shipping.city.trim();
+    const canSubmit = cart.length > 0 && !shippingMissing && !placing;
+
+    useEffect(() => {
+        getProfile()
+            .then((p) =>
+                setShipping((prev) => ({
+                    ...prev,
+                    name: p.name || prev.name,
+                    phone: p.phone || prev.phone,
+                    address: p.address || prev.address,
+                    ward: p.ward || prev.ward,
+                    district: p.district || prev.district,
+                    city: p.city || prev.city,
+                }))
+            )
+            .catch(() => {
+                // ignore if not logged in
+            });
+    }, []);
 
     const handlePlaceOrder = async () => {
         if (cart.length === 0) {
             setMessage("Giỏ hàng trống.");
+            return;
+        }
+
+        if (!shipping.name || !shipping.phone || !shipping.address) {
+            setMessage("Vui lòng nhập đầy đủ tên, số điện thoại và địa chỉ giao hàng.");
             return;
         }
 
@@ -36,6 +77,13 @@ export default function CheckoutPage() {
                     productId: item.id,
                     quantity: item.quantity,
                 })),
+                shippingName: shipping.name,
+                shippingPhone: shipping.phone,
+                shippingAddress: shipping.address,
+                shippingWard: shipping.ward,
+                shippingDistrict: shipping.district,
+                shippingCity: shipping.city,
+                note: shipping.note,
             });
             clearCart();
             try {
@@ -66,16 +114,55 @@ export default function CheckoutPage() {
                             type="text"
                             placeholder="Họ và tên"
                             className="border rounded-lg p-3"
+                            value={shipping.name}
+                            onChange={(e) => setShipping({ ...shipping, name: e.target.value })}
+                            required
                         />
                         <input
                             type="text"
                             placeholder="Số điện thoại"
                             className="border rounded-lg p-3"
+                            value={shipping.phone}
+                            onChange={(e) => setShipping({ ...shipping, phone: e.target.value })}
+                            required
                         />
                         <input
                             type="text"
-                            placeholder="Địa chỉ cụ thể"
+                            placeholder="Địa chỉ (số nhà, tên đường)"
                             className="border rounded-lg p-3 col-span-1 md:col-span-2"
+                            value={shipping.address}
+                            onChange={(e) => setShipping({ ...shipping, address: e.target.value })}
+                            required
+                        />
+                        <input
+                            type="text"
+                            placeholder="Phường/Xã"
+                            className="border rounded-lg p-3"
+                            value={shipping.ward}
+                            onChange={(e) => setShipping({ ...shipping, ward: e.target.value })}
+                            required
+                        />
+                        <input
+                            type="text"
+                            placeholder="Quận/Huyện"
+                            className="border rounded-lg p-3"
+                            value={shipping.district}
+                            onChange={(e) => setShipping({ ...shipping, district: e.target.value })}
+                            required
+                        />
+                        <input
+                            type="text"
+                            placeholder="Tỉnh/Thành phố"
+                            className="border rounded-lg p-3"
+                            value={shipping.city}
+                            onChange={(e) => setShipping({ ...shipping, city: e.target.value })}
+                            required
+                        />
+                        <textarea
+                            placeholder="Ghi chú giao hàng (tuỳ chọn)"
+                            className="border rounded-lg p-3 md:col-span-2"
+                            value={shipping.note}
+                            onChange={(e) => setShipping({ ...shipping, note: e.target.value })}
                         />
                     </div>
                 </div>
@@ -211,7 +298,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {message && (
-                        <div className="text-center text-sm mt-3 text-gray-700">
+                        <div className="text-center text-sm mt-3 text-red-600">
                             <p className="font-semibold">{message}</p>
                         </div>
                     )}
@@ -260,8 +347,8 @@ export default function CheckoutPage() {
 
                     <button
                         onClick={handlePlaceOrder}
-                        disabled={placing}
-                        className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-lg disabled:opacity-60"
+                        disabled={!canSubmit}
+                        className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-lg disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {placing ? "Đang xử lý..." : "Đặt hàng"}
                     </button>

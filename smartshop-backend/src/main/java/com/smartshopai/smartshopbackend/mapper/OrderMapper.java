@@ -21,6 +21,13 @@ public class OrderMapper {
                 order.getStatus(),
                 order.getTotalAmount(),
                 order.getCreatedAt(),
+                order.getShippingName(),
+                order.getShippingPhone(),
+                order.getShippingAddress(),
+                order.getShippingWard(),
+                order.getShippingDistrict(),
+                order.getShippingCity(),
+                order.getShippingNote(),
                 items);
     }
 

@@ -60,6 +60,15 @@ public class OrderService {
         order.setItems(items);
         order.getItems().forEach(i -> i.setOrder(order));
         order.setTotalAmount(calculateTotal(order.getItems()));
+
+        order.setShippingName(defaultIfBlank(request.getShippingName(), user.getName()));
+        order.setShippingPhone(defaultIfBlank(request.getShippingPhone(), user.getPhone()));
+        order.setShippingAddress(defaultIfBlank(request.getShippingAddress(), user.getAddress()));
+        order.setShippingWard(defaultIfBlank(request.getShippingWard(), user.getWard()));
+        order.setShippingDistrict(defaultIfBlank(request.getShippingDistrict(), user.getDistrict()));
+        order.setShippingCity(defaultIfBlank(request.getShippingCity(), user.getCity()));
+        order.setShippingNote(request.getNote());
+
         return orderRepository.save(order);
     }
 
@@ -85,5 +94,12 @@ public class OrderService {
         item.setQuantity(dto.getQuantity());
         item.setUnitPrice(BigDecimal.valueOf(product.getPrice()));
         return item;
+    }
+
+    private String defaultIfBlank(String candidate, String fallback) {
+        if (candidate != null && !candidate.isBlank()) {
+            return candidate;
+        }
+        return fallback;
     }
 }

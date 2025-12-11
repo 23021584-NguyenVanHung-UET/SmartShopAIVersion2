@@ -6,13 +6,14 @@ import { useCart } from "@/features/cart/hooks/useCart";
 
 export default function CartPage() {
     const { cart, updateQty, removeItem, total } = useCart();
+    const hasItems = cart.length > 0;
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold text-blue-600 mb-6">Giỏ hàng</h1>
 
             <div className="bg-white rounded-xl shadow-md p-5">
-                {cart.length === 0 ? (
+                {!hasItems ? (
                     <p className="text-gray-500 text-center py-10">
                         Giỏ hàng của bạn đang trống.
                     </p>
@@ -29,7 +30,7 @@ export default function CartPage() {
                     </div>
                 )}
 
-                <CartSummary total={total} />
+                {hasItems && <CartSummary total={total} />}
             </div>
         </div>
     );

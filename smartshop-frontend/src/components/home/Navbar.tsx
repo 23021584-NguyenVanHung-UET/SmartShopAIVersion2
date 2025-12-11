@@ -118,7 +118,12 @@ export default function Navbar({ onSearch }: NavbarProps) {
                             <span className="text-gray-700 font-medium">
                                 👋 Xin chào, <b>{user.name}</b>
                             </span>
-
+                            <Link
+                                href="/profile"
+                                className="px-3 py-1.5 rounded-full border text-sm font-semibold hover:bg-blue-50"
+                            >
+                                Hồ sơ
+                            </Link>
                             <button
                                 onClick={handleLogout}
                                 className="px-4 py-1.5 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600"

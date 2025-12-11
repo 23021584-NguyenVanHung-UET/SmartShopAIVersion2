@@ -38,4 +38,11 @@ public class User extends BaseAuditEntity {
     @Column(nullable = false, columnDefinition = "varchar(255) default 'USER'")
     @Builder.Default
     private Role role = Role.USER;
+
+    private String phone;
+    private String address;
+    private String ward;
+    private String district;
+    private String city;
+    private String postalCode;
 }

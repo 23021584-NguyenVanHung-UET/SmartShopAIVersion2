@@ -14,5 +14,12 @@ public class OrderResponse {
     private OrderStatus status;
     private BigDecimal totalAmount;
     private Instant createdAt;
+    private String shippingName;
+    private String shippingPhone;
+    private String shippingAddress;
+    private String shippingWard;
+    private String shippingDistrict;
+    private String shippingCity;
+    private String shippingNote;
     private List<OrderItemResponse> items;
 }
