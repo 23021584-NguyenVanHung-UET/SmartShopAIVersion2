@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Menu, X, Home, Users, Package, ShoppingBag, Brain, Settings, LogOut, 
   Sun, Moon, ChevronRight 
@@ -21,10 +21,17 @@ export default function Sidebar() {
   const [open, setOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle("dark");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/auth/login";
   };
 
   return (
@@ -87,7 +94,9 @@ export default function Sidebar() {
           {darkMode ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-blue-600" />}
           {open && <span className="text-sm font-medium">Chế độ {darkMode ? "sáng" : "tối"}</span>}
         </button>
-        <button className="w-full flex items-center justify-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-all">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition-all">
           <LogOut size={20} />
           {open && <span className="text-sm font-medium">Đăng xuất</span>}
         </button>

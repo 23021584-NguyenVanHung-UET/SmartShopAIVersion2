@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
 import {
@@ -19,7 +20,8 @@ import {
   Calendar,
   Download,
   Filter,
-  MoreVertical
+  MoreVertical,
+  LogOut
 } from "lucide-react";
 import { dashboardApi, ordersApi } from "@/lib/api";
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444"];
@@ -47,6 +49,14 @@ export default function DashboardPage() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [avatar, setAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/auth/login";
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -201,38 +211,53 @@ export default function DashboardPage() {
           </button>
 
           {/* User Profile with Avatar Upload */}
-          <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
-            <div className="relative group">
-              <div className="w-12 h-12 rounded-2xl overflow-hidden cursor-pointer" onClick={triggerFileInput}>
-                {avatar ? (
-                  <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                    A
+          <div className="relative">
+            <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700 cursor-pointer" onClick={() => setDropdownOpen(!dropdownOpen)}>
+              <div className="relative group">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden cursor-pointer" onClick={triggerFileInput}>
+                  {avatar ? (
+                    <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                      A
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                    <Camera className="w-6 h-6 text-white" />
                   </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-                  <Camera className="w-6 h-6 text-white" />
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
               </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleAvatarUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
+
+              <div className="hidden md:block">
+                <p className="font-semibold text-gray-800 dark:text-white">Admin User</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">admin@example.com</p>
               </div>
+
+              <ChevronDown className="w-5 h-5 text-gray-400" />
             </div>
 
-            <div className="hidden md:block">
-              <p className="font-semibold text-gray-800 dark:text-white">Admin User</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">admin@example.com</p>
-            </div>
-
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            {/* Dropdown Menu */}
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3"
+                >
+                  <LogOut size={16} />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

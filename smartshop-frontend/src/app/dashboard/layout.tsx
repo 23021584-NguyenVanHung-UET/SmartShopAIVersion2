@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Menu, X, Home, Users, Package, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, Home, Users, Package, Settings, LogOut } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(true);
     const [role, setRole] = useState<"ADMIN" | "USER" | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const loadRole = () => {
@@ -16,6 +18,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         loadRole();
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/auth/login";
+    };
 
 
     return (
@@ -50,6 +58,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </>
                     )}
                 </nav>
+                <div className="mt-auto pt-4 border-t border-gray-200">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 text-red-600 transition"
+                    >
+                        <LogOut size={20} />
+                        {open && <span className="font-medium">Đăng xuất</span>}
+                    </button>
+                </div>
             </aside>
 
             <main className="flex-1 p-8">

@@ -24,7 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ------------------------------------ */
   useEffect(() => {
     setMounted(true);
-    
+
     // Load role từ localStorage
     const storedRole = localStorage.getItem("role");
     setRole(storedRole || "ADMIN"); // Mặc định là ADMIN
@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   const menuItems = [
@@ -89,9 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
         {/* ----------------- SIDEBAR ----------------- */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 ${
-            sidebarOpen ? "w-72" : "w-20"
-          } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 
+          className={`fixed inset-y-0 left-0 z-50 ${sidebarOpen ? "w-72" : "w-20"
+            } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 
           shadow-xl transition-all duration-300 flex flex-col`}
         >
           {/* Logo */}
@@ -180,9 +179,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* ----------------- MAIN CONTENT ----------------- */}
         <div
-          className={`transition-all duration-300 ${
-            sidebarOpen ? "ml-72" : "ml-20"
-          } min-h-screen bg-gray-50 dark:bg-gray-950`}
+          className={`transition-all duration-300 ${sidebarOpen ? "ml-72" : "ml-20"
+            } min-h-screen bg-gray-50 dark:bg-gray-950`}
         >
           {/* Header */}
           <header className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -223,9 +221,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                     <ChevronDown
                       size={16}
-                      className={`text-gray-500 transition-transform ${
-                        profileMenuOpen ? "rotate-180" : ""
-                      }`}
+                      className={`text-gray-500 transition-transform ${profileMenuOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </button>
 
@@ -319,27 +316,24 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      className={`group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${
-        active
+      className={`group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${active
           ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
           : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-      }`}
+        }`}
     >
       <div
-        className={`p-2 rounded-lg transition-all ${
-          active
+        className={`p-2 rounded-lg transition-all ${active
             ? "bg-white/20"
             : "bg-gray-100 dark:bg-gray-800 group-hover:scale-110"
-        }`}
+          }`}
       >
         <Icon size={20} className={active ? "text-white" : color} />
       </div>
 
       {open && (
         <span
-          className={`font-medium ${
-            active ? "text-white" : "text-gray-700 dark:text-gray-300"
-          }`}
+          className={`font-medium ${active ? "text-white" : "text-gray-700 dark:text-gray-300"
+            }`}
         >
           {label}
         </span>
