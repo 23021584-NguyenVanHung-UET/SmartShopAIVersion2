@@ -23,7 +23,7 @@ public class OrderAdminController {
 
     @GetMapping
     public Page<Order> all(Pageable pageable) {
-        return orderRepository.findAll(pageable);
+        return orderRepository.findAllWithUserAndItems(pageable);
     }
 
     @GetMapping("/{id}")
