@@ -47,10 +47,16 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [statsData, setStatsData] = useState<any>(null);
   const [avatar, setAvatar] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [dateFilter, setDateFilter] = useState("This Week");
+  const [showDateDropdown, setShowDateDropdown] = useState(false);
+  const [orderActionMenu, setOrderActionMenu] = useState<string | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -64,21 +70,36 @@ export default function DashboardPage() {
         setLoading(true);
         // Fetch dashboard statistics
         const statsData = await dashboardApi.getStats();
+        setStatsData(statsData);
 
         // Fetch revenue data for last 7 days
         const revenueData = await dashboardApi.getRevenue(7) as any[];
-        setChartData(revenueData.length > 0 ? revenueData : [
-          { date: "Mon", revenue: 0, orders: 0 },
-          { date: "Tue", revenue: 0, orders: 0 },
-          { date: "Wed", revenue: 0, orders: 0 },
-          { date: "Thu", revenue: 0, orders: 0 },
-          { date: "Fri", revenue: 0, orders: 0 },
-          { date: "Sat", revenue: 0, orders: 0 },
-          { date: "Sun", revenue: 0, orders: 0 },
+        // Transform data: convert 'date' to 'day' for the chart
+        const transformedRevenueData = revenueData.map((item: any) => ({
+          day: item.date, // Use the date as day label
+          revenue: item.revenue,
+          orders: item.orders
+        }));
+        setChartData(transformedRevenueData.length > 0 ? transformedRevenueData : [
+          { day: "Mon", revenue: 0, orders: 0 },
+          { day: "Tue", revenue: 0, orders: 0 },
+          { day: "Wed", revenue: 0, orders: 0 },
+          { day: "Thu", revenue: 0, orders: 0 },
+          { day: "Fri", revenue: 0, orders: 0 },
+          { day: "Sat", revenue: 0, orders: 0 },
+          { day: "Sun", revenue: 0, orders: 0 },
         ]);
+
         // Fetch top products
         const topProducts = await dashboardApi.getTopProducts(6) as any[];
-        setPieData(topProducts.length > 0 ? topProducts : []);
+        // Transform product data to match pie chart format
+        const transformedProducts = topProducts.map((product: any) => ({
+          name: product.productName,
+          value: product.totalSold,
+          category: 'Product',
+          sales: `${product.totalRevenue.toLocaleString()} ₫`
+        }));
+        setPieData(transformedProducts.length > 0 ? transformedProducts : []);
         // Fetch recent orders (first page, 7 items)
         const ordersResponse = await ordersApi.getAll(0, 7) as any;
         const orders = ordersResponse.content || [];
@@ -104,6 +125,21 @@ export default function DashboardPage() {
       }
     };
     fetchDashboardData();
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowNotifications(false);
+        setShowDateDropdown(false);
+        setOrderActionMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const getRelativeTime = (dateString: string) => {
@@ -135,38 +171,67 @@ export default function DashboardPage() {
     fileInputRef.current?.click();
   };
 
+  const handleExport = () => {
+    // Export dashboard data as CSV
+    const csvData = [
+      ['Metric', 'Value'],
+      ['Total Revenue', statsData?.totalRevenue || 0],
+      ['Total Orders', statsData?.totalOrders || 0],
+      ['Total Users', statsData?.totalUsers || 0],
+      ['Total Products', statsData?.totalProducts || 0],
+    ];
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dashboard-stats-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // In a real app, you'd implement search logic here
+  };
+
+  const handleViewOrder = (orderId: string) => {
+    router.push(`/admin/dashboard/orders`);
+  };
+
+  const dateFilterOptions = ['Today', 'This Week', 'This Month', 'Last 30 Days', 'Last 90 Days'];
+
   const stats = [
     {
       title: "Total Revenue",
-      value: "45.2M",
+      value: statsData ? `${(statsData.totalRevenue / 1000000).toFixed(1)}M ₫` : "0",
       icon: DollarSign,
       color: "from-emerald-500 to-teal-500",
-      change: "+28.5%",
-      trend: "up"
+      change: statsData ? `${statsData.revenueGrowth > 0 ? '+' : ''}${statsData.revenueGrowth.toFixed(1)}%` : "+0%",
+      trend: statsData && statsData.revenueGrowth >= 0 ? "up" : "down"
     },
     {
       title: "Total Orders",
-      value: "1,284",
+      value: statsData ? statsData.totalOrders.toLocaleString() : "0",
       icon: ShoppingCart,
       color: "from-blue-500 to-cyan-500",
-      change: "+12.3%",
-      trend: "up"
+      change: statsData ? `${statsData.orderGrowth > 0 ? '+' : ''}${statsData.orderGrowth.toFixed(1)}%` : "+0%",
+      trend: statsData && statsData.orderGrowth >= 0 ? "up" : "down"
     },
     {
       title: "Active Users",
-      value: "5,842",
+      value: statsData ? statsData.totalUsers.toLocaleString() : "0",
       icon: Users,
       color: "from-purple-500 to-pink-500",
-      change: "+18.7%",
-      trend: "up"
+      change: statsData ? `${statsData.userGrowth > 0 ? '+' : ''}${statsData.userGrowth.toFixed(1)}%` : "+0%",
+      trend: statsData && statsData.userGrowth >= 0 ? "up" : "down"
     },
     {
       title: "Products",
-      value: "128",
+      value: statsData ? statsData.totalProducts.toLocaleString() : "0",
       icon: Package,
       color: "from-orange-500 to-red-500",
-      change: "+8.2%",
-      trend: "up"
+      change: statsData ? `${statsData.productGrowth > 0 ? '+' : ''}${statsData.productGrowth.toFixed(1)}%` : "+0%",
+      trend: statsData && statsData.productGrowth >= 0 ? "up" : "down"
     },
   ];
 
@@ -195,18 +260,34 @@ export default function DashboardPage() {
             <input
               type="text"
               placeholder="Search orders, customers, products..."
+              value={searchQuery}
+              onChange={handleSearch}
               className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-4 ml-6">
-          <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-            <Bell className="w-6 h-6" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          <div className="relative dropdown-container">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+            >
+              <Bell className="w-6 h-6" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
+                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Notifications</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">No new notifications</p>
+              </div>
+            )}
+          </div>
 
-          <button className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+          <button
+            onClick={() => router.push('/admin/dashboard/settings')}
+            className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+          >
             <Settings className="w-6 h-6" />
           </button>
 
@@ -278,12 +359,36 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-              <Calendar className="w-5 h-5" />
-              <span className="font-medium">This Week</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            <button className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25">
+            <div className="relative dropdown-container">
+              <button
+                onClick={() => setShowDateDropdown(!showDateDropdown)}
+                className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Calendar className="w-5 h-5" />
+                <span className="font-medium">{dateFilter}</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {showDateDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  {dateFilterOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setDateFilter(option);
+                        setShowDateDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25"
+            >
               <Download className="w-5 h-5" />
               <span className="font-medium">Export</span>
             </button>
@@ -418,7 +523,10 @@ export default function DashboardPage() {
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">Top Products</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Best selling items</p>
             </div>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <button
+              onClick={() => router.push('/admin/dashboard/products')}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
               View all
             </button>
           </div>
@@ -487,7 +595,10 @@ export default function DashboardPage() {
             <h3 className="text-xl font-bold text-gray-800 dark:text-white">Recent Orders</h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Latest customer orders</p>
           </div>
-          <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-2">
+          <button
+            onClick={() => router.push('/admin/dashboard/orders')}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-2"
+          >
             <Eye className="w-4 h-4" />
             View all orders
           </button>
@@ -543,12 +654,34 @@ export default function DashboardPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleViewOrder(order.id)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="View order details"
+                        >
                           <Eye className="w-5 h-5" />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
+                        <div className="relative dropdown-container">
+                          <button
+                            onClick={() => setOrderActionMenu(orderActionMenu === order.id ? null : order.id)}
+                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          {orderActionMenu === order.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                              <button className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                Edit Status
+                              </button>
+                              <button className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                Print Invoice
+                              </button>
+                              <button className="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600">
+                                Cancel Order
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
