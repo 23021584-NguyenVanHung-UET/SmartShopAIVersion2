@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { login } from "@/features/auth/services/authService";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -27,22 +28,14 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("http://localhost:8080/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+            const data = await login({ email, password });
 
-            const data = await res.json();
-
-            // ❌ Nếu lỗi server / sai mật khẩu / sai email
-            if (!res.ok) {
-                setError(data.error || data.message || "Sai email hoặc mật khẩu!");
+            if (!data.token) {
+                setError("Sai email hoặc mật khẩu!");
                 setLoading(false);
                 return;
             }
 
-            // ⭐ Lưu JWT token + user info
             localStorage.setItem("token", data.token);
             localStorage.setItem(
                 "user",
@@ -53,21 +46,12 @@ export default function LoginPage() {
                 })
             );
 
-            // Hiệu ứng réussite
             setSuccess(true);
             setLoading(false);
-
-            // Redirect based on role
-            setTimeout(() => {
-                if (data.role === "ADMIN") {
-                    router.push("/admin/dashboard");
-                } else {
-                    router.push("/homepage");
-                }
-            }, 1500);
-
-        } catch (err) {
-            setError("Không thể kết nối tới server!");
+            setTimeout(() => router.push("/homepage"), 1500);
+        } catch (err: any) {
+            const message = err?.response?.data?.error || err?.response?.data?.message || "Sai email hoặc mật khẩu!";
+            setError(message);
             setLoading(false);
         }
     };

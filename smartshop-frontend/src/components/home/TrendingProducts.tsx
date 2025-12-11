@@ -4,13 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Product } from "@/features/products/type";
-import { getProducts } from "@/features/products/services/productService";
+import { getTrendingProducts } from "@/features/products/services/productService";
 
 export default function TrendingProducts() {
     const [products, setProducts] = useState<Product[]>([]);
 
     useEffect(() => {
-        getProducts().then(setProducts);
+        getTrendingProducts().then(setProducts).catch(() => setProducts([]));
     }, []);
 
     return (

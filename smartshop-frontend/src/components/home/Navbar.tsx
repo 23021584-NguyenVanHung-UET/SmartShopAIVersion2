@@ -3,6 +3,7 @@
 import { useState, useEffect, startTransition } from "react";
 import Link from "next/link";
 import { ShoppingCart, Search } from "lucide-react";
+import { useCart } from "@/features/cart/hooks/useCart";
 
 type User = {
     name: string;
@@ -14,7 +15,8 @@ type NavbarProps = {
 };
 
 export default function Navbar({ onSearch }: NavbarProps) {
-    const [cartCount] = useState(0);
+    const { cart } = useCart();
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const [user, setUser] = useState<User | null>(null);
 
     // 🔥 Load user từ JWT: GET /auth/me
@@ -129,11 +131,9 @@ export default function Navbar({ onSearch }: NavbarProps) {
                     {/* Cart */}
                     <Link href="/cart" className="relative cursor-pointer">
                         <ShoppingCart size={26} className="text-gray-800" />
-                        {cartCount > 0 && (
-                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                {cartCount}
-                            </span>
-                        )}
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full min-w-[22px] text-center">
+                            {cartCount}
+                        </span>
                     </Link>
                 </div>
             </div>

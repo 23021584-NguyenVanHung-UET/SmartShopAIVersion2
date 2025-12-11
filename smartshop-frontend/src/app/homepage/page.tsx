@@ -5,6 +5,7 @@ import Banner from "@/components/home/Banner";
 import Categories from "@/components/home/Categories";
 import FlashSale from "@/components/home/FlashSale";
 import ProductGrid from "@/components/home/ProductGrid";
+import Footer from "@/components/shared/Footer";
 
 export default function HomePageShop() {
     return (
@@ -16,6 +17,7 @@ export default function HomePageShop() {
                 <FlashSale />
                 <ProductGrid />
             </div>
+            <Footer />
         </div>
     );
 }

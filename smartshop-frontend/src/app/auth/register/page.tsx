@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { register } from "@/features/auth/services/authService";
 
 export default function RegisterPage() {
     const [name, setName] = useState("");
@@ -55,23 +56,17 @@ export default function RegisterPage() {
 
         setLoading(true);
 
-        const res = await fetch("http://localhost:8080/api/auth/register", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, password })
-        });
-
-        setLoading(false);
-
-        if (res.ok) {
+        try {
+            const res = await register({ name, email, password });
             setSuccess(true);
-            setMessage("🎉 Đăng ký thành công! Đang chuyển sang đăng nhập...");
-
+            setMessage(res.message || "🎉 Đăng ký thành công! Đang chuyển sang đăng nhập...");
+            setLoading(false);
             setTimeout(() => router.push("/auth/login"), 2000);
-        } else {
-            const error = await res.json();
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || "Đăng ký thất bại!";
             setSuccess(false);
-            setMessage(error.message || "Đăng ký thất bại!");
+            setMessage(msg);
+            setLoading(false);
         }
     };
 

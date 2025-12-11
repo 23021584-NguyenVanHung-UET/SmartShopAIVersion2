@@ -35,6 +35,8 @@ export default function CartItem({ item, updateQty, removeItem }: Props) {
                     -
                 </button>
 
+                <span className="min-w-[28px] text-center font-semibold">{item.quantity}</span>
+
                 <button
                     aria-label="Tăng số lượng"
                     className="px-3 py-1 bg-gray-200 rounded-lg hover:bg-gray-300"

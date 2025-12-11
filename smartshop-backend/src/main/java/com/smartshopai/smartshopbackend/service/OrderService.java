@@ -35,6 +35,12 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public Order getOrderForUser(Long orderId, Long userId) {
+        return orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
+    }
+
+    @Transactional(readOnly = true)
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
