@@ -34,7 +34,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
                 });
 
                 if (!res.ok) {
-                    console.warn("Token hết hạn hoặc không hợp lệ.");
+                    // Token expired or invalid - silently clear
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
                     return;
@@ -51,7 +51,10 @@ export default function Navbar({ onSearch }: NavbarProps) {
 
                 localStorage.setItem("user", JSON.stringify(data));
             } catch (error) {
-                console.error("Lỗi khi lấy thông tin user:", error);
+                // Silently handle fetch errors (e.g., network issues, CORS)
+                // Don't log to console to avoid cluttering
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
             }
         };
 
