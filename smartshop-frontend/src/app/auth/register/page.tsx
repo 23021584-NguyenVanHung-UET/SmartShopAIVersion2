@@ -1,9 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import AuthLayout from "@/components/auth/AuthLayout";
 import { register } from "@/features/auth/services/authService";
 
 export default function RegisterPage() {
@@ -11,46 +13,39 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
     const [message, setMessage] = useState("");
     const [success, setSuccess] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(false);
-
     const router = useRouter();
 
-    // Validate email regex
-    const isValidEmail = (email: string) => {
-        return /\S+@\S+\.\S+/.test(email);
-    };
+    const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Frontend Validate
         if (!name.trim()) {
             setSuccess(false);
-            setMessage("Tên không được bỏ trống!");
+            setMessage("Họ tên không được bỏ trống.");
             return;
         }
 
         if (!isValidEmail(email)) {
             setSuccess(false);
-            setMessage("Email không hợp lệ!");
+            setMessage("Email không hợp lệ.");
             return;
         }
 
         if (password.length < 6) {
             setSuccess(false);
-            setMessage("Mật khẩu phải có ít nhất 6 ký tự!");
+            setMessage("Mật khẩu cần tối thiểu 6 ký tự.");
             return;
         }
 
         if (password !== confirmPassword) {
             setSuccess(false);
-            setMessage("Mật khẩu nhập lại không khớp!");
+            setMessage("Mật khẩu nhập lại chưa khớp.");
             return;
         }
 
@@ -59,149 +54,131 @@ export default function RegisterPage() {
         try {
             const res = await register({ name, email, password });
             setSuccess(true);
-            setMessage(res.message || "🎉 Đăng ký thành công! Đang chuyển sang đăng nhập...");
+            setMessage(res.message || "🎉 Tạo tài khoản thành công! Đang chuyển sang đăng nhập...");
             setLoading(false);
-            setTimeout(() => router.push("/auth/login"), 2000);
+            setTimeout(() => router.push("/auth/login"), 1500);
         } catch (err: any) {
-            const msg = err?.response?.data?.message || "Đăng ký thất bại!";
+            const msg = err?.response?.data?.message || "Đăng ký thất bại, thử lại sau.";
             setSuccess(false);
             setMessage(msg);
             setLoading(false);
         }
     };
 
+    const inputClass =
+        "w-full rounded-xl border border-border bg-secondary px-4 py-3 text-foreground placeholder:text-muted-foreground/70 focus:border-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-white p-6">
-            <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md bg-white shadow-xl rounded-3xl p-10 border border-gray-200"
-            >
-                {/* Logo */}
-                <div className="text-center mb-6">
-                    <motion.img
-                        src="/images/Logo_HUET.svg.png"
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="mx-auto w-20 h-20 drop-shadow-lg"
-                    />
-
-                    <h1 className="text-3xl font-extrabold text-gray-900 mt-4">
-                        Tạo tài khoản
-                    </h1>
-                    <p className="text-gray-600 mt-1">Tham gia SmartShopAI ngay hôm nay</p>
-                </div>
-
-                {/* Alert */}
+        <AuthLayout
+            title="Tạo tài khoản SmartShop"
+            subtitle="Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi cá nhân hóa cho mọi ngành hàng."
+            footer={
+                <p className="text-center">
+                    Đã có tài khoản?{" "}
+                    <Link href="/auth/login" className="font-semibold text-foreground underline-offset-4 hover:underline">
+                        Đăng nhập
+                    </Link>
+                </p>
+            }
+        >
+            <div className="space-y-5">
                 {message && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`p-3 mb-4 text-center rounded-xl text-sm font-medium ${success
-                                ? "bg-green-100 text-green-700 border border-green-300"
-                                : "bg-red-100 text-red-700 border border-red-300"
-                            }`}
+                    <div
+                        className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                            success
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                : "border-red-200 bg-red-50 text-red-700"
+                        }`}
                     >
                         {message}
-                    </motion.div>
+                    </div>
                 )}
-
-                {/* Form */}
-                <form className="space-y-5" onSubmit={handleSubmit}>
-                    {/* Name */}
-                    <div className="flex flex-col">
-                        <label className="text-gray-700 font-medium mb-1">Họ và tên</label>
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">Họ và tên</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Nguyễn Văn A"
-                            className="px-4 py-3 rounded-xl bg-gray-100 focus:bg-white border border-gray-300 focus:ring-2 ring-blue-400 outline-none transition"
+                            className={inputClass}
                         />
                     </div>
 
-                    {/* Email */}
-                    <div className="flex flex-col">
-                        <label className="text-gray-700 font-medium mb-1">Email</label>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
-                            className="px-4 py-3 rounded-xl bg-gray-100 focus:bg-white border border-gray-300 focus:ring-2 ring-blue-400 outline-none transition"
+                            placeholder="user@smartshop.local"
+                            className={inputClass}
                         />
                     </div>
 
-                    {/* Password */}
-                    <div className="flex flex-col relative">
-                        <label className="text-gray-700 font-medium mb-1">Mật khẩu</label>
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="px-4 py-3 rounded-xl bg-gray-100 focus:bg-white border border-gray-300 focus:ring-2 ring-blue-400 outline-none transition"
-                        />
-                        <span
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-11 text-gray-500 cursor-pointer"
-                        >
-                            {showPassword ? "👁️" : "👁️‍🗨️"}
-                        </span>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">Mật khẩu</label>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Tối thiểu 6 ký tự"
+                                className={inputClass}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted-foreground hover:text-foreground"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Confirm Password */}
-                    <div className="flex flex-col relative">
-                        <label className="text-gray-700 font-medium mb-1">Nhập lại mật khẩu</label>
-                        <input
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="••••••••"
-                            className="px-4 py-3 rounded-xl bg-gray-100 focus:bg-white border border-gray-300 focus:ring-2 ring-blue-400 outline-none transition"
-                        />
-                        <span
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute right-4 top-11 text-gray-500 cursor-pointer"
-                        >
-                            {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
-                        </span>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-foreground">Nhập lại mật khẩu</label>
+                        <div className="relative">
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Nhập lại để xác nhận"
+                                className={inputClass}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted-foreground hover:text-foreground"
+                            >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Button with loading */}
                     <motion.button
-                        whileHover={{ scale: loading ? 1 : 1.03 }}
-                        whileTap={{ scale: loading ? 1 : 0.97 }}
+                        whileHover={{ scale: loading ? 1 : 1.01 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
                         disabled={loading}
                         type="submit"
-                        className={`w-full py-3 rounded-xl text-white font-bold shadow-md transition 
-                            ${loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}
-                        `}
+                        className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background shadow-[0_10px_30px_-15px_rgba(15,23,42,0.55)] transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-75"
                     >
                         {loading ? (
-                            <div className="flex justify-center items-center gap-2">
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Đang xử lý...
-                            </div>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 0.7, ease: "linear" }}
+                                className="h-5 w-5 rounded-full border-2 border-background border-t-transparent"
+                            />
                         ) : (
                             "Đăng ký"
                         )}
                     </motion.button>
                 </form>
 
-                {/* Link */}
-                <p className="text-gray-600 text-center mt-6 text-sm">
-                    Đã có tài khoản?{" "}
-                    <Link
-                        href="/auth/login"
-                        className="font-semibold text-blue-600 hover:underline"
-                    >
-                        Đăng nhập ngay
-                    </Link>
+                <p className="text-xs text-muted-foreground">
+                    Bằng việc tạo tài khoản, bạn đồng ý nhận thông tin ưu đãi từ SmartShop và có thể hủy bất kỳ lúc nào.
                 </p>
-            </motion.div>
-        </div>
+            </div>
+        </AuthLayout>
     );
 }

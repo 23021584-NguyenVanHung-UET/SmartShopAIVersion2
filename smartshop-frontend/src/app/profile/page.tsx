@@ -60,104 +60,94 @@ export default function ProfilePage() {
         }
     };
 
+    const field = (
+        key: keyof UpdateProfilePayload,
+        label: string,
+        type = "text",
+        className = ""
+    ) => (
+        <div className={className}>
+            <label className="block text-sm font-medium text-foreground mb-1">{label}</label>
+            <input
+                type={type}
+                value={(form as any)[key] ?? ""}
+                onChange={(e) => handleChange(key, e.target.value)}
+                className="w-full rounded-lg border border-border bg-background p-3 text-sm focus:border-foreground"
+                required={key === "name" || key === "email" || key === "phone" || key === "address"}
+            />
+        </div>
+    );
+
     return (
-        <div className="bg-gray-50 min-h-screen">
+        <div className="bg-background min-h-screen">
             <Navbar />
-            <main className="max-w-5xl mx-auto px-6 pt-24 pb-10">
-                <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
-                <p className="text-gray-600 mb-6">Cập nhật thông tin và địa chỉ giao hàng mặc định.</p>
+            <main className="max-w-6xl mx-auto px-6 pt-[calc(var(--header-height)+12px)] lg:pt-[calc(var(--header-height)+16px)] pb-16">
+                <div className="flex flex-col gap-2 mb-8">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Hồ sơ</p>
+                    <h1 className="text-3xl font-semibold text-foreground">Thông tin cá nhân</h1>
+                    <p className="text-sm text-muted-foreground">Cập nhật thông tin và địa chỉ giao hàng mặc định.</p>
+                </div>
 
-                <div className="bg-white rounded-xl shadow p-6 space-y-4">
-                    {loading ? (
-                        <p>Đang tải...</p>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Họ tên</label>
-                                    <input
-                                        value={form.name}
-                                        onChange={(e) => handleChange("name", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                        required
-                                    />
+                <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr] items-start">
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                        {loading ? (
+                            <p className="text-muted-foreground text-sm">Đang tải...</p>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {field("name", "Họ tên")}
+                                    {field("email", "Email", "email")}
+                                    {field("phone", "Số điện thoại")}
+                                    {field("postalCode", "Mã bưu chính")}
+                                    {field("address", "Địa chỉ", "text", "md:col-span-2")}
+                                    {field("ward", "Phường/Xã")}
+                                    {field("district", "Quận/Huyện")}
+                                    {field("city", "Tỉnh/Thành phố")}
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={form.email}
-                                        onChange={(e) => handleChange("email", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Số điện thoại</label>
-                                    <input
-                                        value={form.phone}
-                                        onChange={(e) => handleChange("phone", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                        required
-                                        pattern="^[0-9+\\-\\s]{6,20}$"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Mã bưu chính</label>
-                                    <input
-                                        value={form.postalCode ?? ""}
-                                        onChange={(e) => handleChange("postalCode", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                    />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium mb-1">Địa chỉ</label>
-                                    <input
-                                        value={form.address}
-                                        onChange={(e) => handleChange("address", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Phường/Xã</label>
-                                    <input
-                                        value={form.ward ?? ""}
-                                        onChange={(e) => handleChange("ward", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Quận/Huyện</label>
-                                    <input
-                                        value={form.district ?? ""}
-                                        onChange={(e) => handleChange("district", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Tỉnh/Thành phố</label>
-                                    <input
-                                        value={form.city ?? ""}
-                                        onChange={(e) => handleChange("city", e.target.value)}
-                                        className="w-full border rounded-lg p-3"
-                                    />
-                                </div>
+
+                                {message && (
+                                    <div className={`text-sm ${message.includes("Đã lưu") ? "text-foreground" : "text-destructive"}`}>
+                                        {message}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="w-full rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background hover:bg-foreground/90 disabled:opacity-60"
+                                >
+                                    {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                                </button>
+                            </>
+                        )}
+                    </section>
+
+                    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                        <h2 className="text-lg font-semibold text-foreground">Tóm tắt tài khoản</h2>
+                        <div className="space-y-3 text-sm text-muted-foreground">
+                            <div className="flex justify-between">
+                                <span>Họ tên</span>
+                                <span className="font-semibold text-foreground">{profile?.name || "—"}</span>
                             </div>
-
-                            {message && (
-                                <div className="text-sm text-green-600">{message}</div>
-                            )}
-
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
-                            >
-                                {saving ? "Đang lưu..." : "Lưu thay đổi"}
-                            </button>
-                        </>
-                    )}
+                            <div className="flex justify-between">
+                                <span>Email</span>
+                                <span className="font-semibold text-foreground">{profile?.email || "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Điện thoại</span>
+                                <span className="font-semibold text-foreground">{profile?.phone || "—"}</span>
+                            </div>
+                        </div>
+                        <div className="rounded-xl border border-border/70 bg-muted/50 p-4 text-sm">
+                            <p className="text-foreground font-semibold mb-1">Địa chỉ giao hàng mặc định</p>
+                            <p className="text-muted-foreground">
+                                {profile?.address || "Chưa cập nhật"}, {profile?.ward} {profile?.district} {profile?.city}
+                            </p>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Lưu ý: Địa chỉ này sẽ tự động điền trong bước thanh toán. Bạn có thể thay đổi khi đặt đơn.
+                        </div>
+                    </section>
                 </div>
             </main>
             <Footer />

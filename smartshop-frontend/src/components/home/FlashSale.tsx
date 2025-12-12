@@ -31,18 +31,28 @@ export default function FlashSale() {
         return () => clearInterval(timer);
     }, []);
 
-    return (
-        <div className="max-w-7xl mx-auto mt-10 px-6">
-            <h2 className="text-xl font-bold text-red-600 flex items-center gap-3">
-                🔥 FLASH SALE
-            </h2>
+    const timeBox = (label: string, value: number) => (
+        <div className="flex flex-col items-center justify-center rounded-xl bg-foreground text-background px-4 py-3 min-w-[70px]">
+            <span className="text-2xl font-semibold tabular-nums">{value.toString().padStart(2, "0")}</span>
+            <span className="text-xs uppercase tracking-wide text-background/70">{label}</span>
+        </div>
+    );
 
-            <div className="flex items-center gap-3 mt-2 text-white">
-                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.hours}</span>
-                :
-                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.minutes}</span>
-                :
-                <span className="bg-red-600 px-3 py-1 rounded-lg">{timeLeft.seconds}</span>
+    return (
+        <div className="max-w-screen-2xl mx-auto mt-10 px-6">
+            <div className="rounded-3xl border border-border bg-card px-6 py-6 shadow-sm flex items-center justify-between gap-6 flex-col md:flex-row">
+                <div className="space-y-2 text-center md:text-left">
+                    <p className="text-xs uppercase tracking-[0.2em] text-destructive">Flash sale</p>
+                    <h2 className="text-2xl font-semibold text-foreground">Giảm sốc trong hôm nay</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Săn deal nổi bật, số lượng có hạn. Kết thúc sau:
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {timeBox("Giờ", timeLeft.hours)}
+                    {timeBox("Phút", timeLeft.minutes)}
+                    {timeBox("Giây", timeLeft.seconds)}
+                </div>
             </div>
         </div>
     );

@@ -3,22 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Category } from "@/features/categories/type";
-
-// Basic icon mapping for the known categories; fallback sparkle for unknowns.
-const icons: Record<string, string> = {
-    "Điện thoại": "📱",
-    "Laptop": "💻",
-    "Thời trang": "👗",
-    "Mỹ phẩm": "💄",
-    "Đồ gia dụng": "🏠",
-    "Thú cưng": "🐶",
-    "Đồng hồ": "⌚",
-    "Balo": "🎒",
-    "Giày dép": "👟",
-    "Sức khỏe": "💊",
-    "Thể thao": "🏀",
-    "Khác": "✨",
-};
+import { Sparkles } from "lucide-react";
 
 type Props = {
     categories: Category[];
@@ -37,23 +22,39 @@ export default function Categories({ categories, selectedSlug, onSelect, linkToP
     }, [categories.length, onSelect, selectedSlug]);
 
     return (
-        <section className="max-w-7xl mx-auto px-6 mt-10">
-            <h2 className="text-xl font-bold mb-4">Danh mục</h2>
+        <section className="max-w-screen-2xl mx-auto px-6 mt-10">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Danh mục</p>
+                    <h2 className="text-2xl font-semibold text-foreground">Khám phá sản phẩm theo nhóm</h2>
+                </div>
+                <span className="hidden md:inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+                    <Sparkles size={14} />
+                    Gợi ý thông minh
+                </span>
+            </div>
 
-            <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                {categories.map((item) => (
-                    <div
-                        key={item.id}
-                        onClick={() => {
-                            onSelect?.(item.slug);
-                            if (linkToPage) router.push(`/category/${item.slug}`);
-                        }}
-                        className={`flex flex-col items-center bg-white p-3 rounded-xl shadow hover:scale-105 transition cursor-pointer border ${selectedSlug === item.slug ? "border-blue-500 ring-2 ring-blue-100" : "border-transparent"}`}
-                    >
-                        <div className="text-3xl">{icons[item.name] || "✨"}</div>
-                        <p className="text-sm mt-2">{item.name}</p>
-                    </div>
-                ))}
+            <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
+                {categories.map((item) => {
+                    const isActive = selectedSlug === item.slug;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => {
+                                onSelect?.(item.slug);
+                                if (linkToPage) router.push(`/category/${item.slug}`);
+                            }}
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+                                isActive
+                                    ? "border-foreground bg-foreground text-background"
+                                    : "border-border bg-card text-foreground hover:border-foreground"
+                            }`}
+                        >
+                            <span className="text-base">✨</span>
+                            <span className="whitespace-nowrap">{item.name}</span>
+                        </button>
+                    );
+                })}
             </div>
         </section>
     );

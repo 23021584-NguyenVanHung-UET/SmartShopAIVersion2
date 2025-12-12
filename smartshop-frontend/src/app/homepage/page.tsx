@@ -1,45 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Navbar from "@/components/home/Navbar";
 import Banner from "@/components/home/Banner";
-import Categories from "@/components/home/Categories";
 import FlashSale from "@/components/home/FlashSale";
 import ProductGrid from "@/components/home/ProductGrid";
 import Footer from "@/components/shared/Footer";
-import { getCategories } from "@/features/categories/services/categoryService";
-import { Category } from "@/features/categories/type";
+import TrendingProducts from "@/components/home/TrendingProducts";
+import CategorySections from "@/components/home/CategorySections";
 
 export default function HomePageShop() {
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
-
-    useEffect(() => {
-        getCategories()
-            .then(setCategories)
-            .catch(() => setCategories([]));
-    }, []);
-
-    const selectedCategoryName =
-        selectedCategory === "all"
-            ? "Tất cả"
-            : categories.find((c) => c.slug === selectedCategory)?.name;
+    const selectedCategory = "all";
+    const selectedCategoryName = "Tất cả";
+    const [searchKeyword, setSearchKeyword] = useState("");
 
     return (
-        <div className="bg-gray-50 min-h-screen">
-            <Navbar />
-            <div className="pt-20">
+        <div className="bg-background min-h-screen">
+            <Navbar onSearch={(text) => setSearchKeyword(text)} />
+            <div className="pt-[calc(var(--header-height)+28px)] lg:pt-[calc(var(--header-height)+36px)]">
                 <Banner />
-                <Categories
-                    categories={categories}
-                    selectedSlug={selectedCategory}
-                    onSelect={(slug) => setSelectedCategory(slug)}
-                    linkToPage
-                />
-                <FlashSale />
+                <div id="flash-sale">
+                    <FlashSale />
+                </div>
+                <div className="max-w-screen-2xl mx-auto px-6">
+                    <TrendingProducts />
+                </div>
+                <CategorySections />
                 <ProductGrid
                     selectedCategorySlug={selectedCategory}
                     selectedCategoryName={selectedCategoryName}
+                    searchKeyword={searchKeyword}
                 />
             </div>
             <Footer />
