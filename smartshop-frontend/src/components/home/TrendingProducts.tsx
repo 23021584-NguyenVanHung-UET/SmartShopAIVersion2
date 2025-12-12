@@ -14,27 +14,37 @@ export default function TrendingProducts() {
     }, []);
 
     return (
-        <div className="mt-10">
-            <h2 className="text-xl font-bold mb-4">🔥 Sản phẩm nổi bật</h2>
+        <div className="mt-12">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Hot nhất tuần</p>
+                    <h2 className="text-2xl font-semibold text-foreground">Sản phẩm nổi bật</h2>
+                </div>
+                <Link href="/homepage#grid" className="text-sm font-semibold text-primary hover:underline">
+                    Xem tất cả
+                </Link>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 4).map((item) => (
                     <Link
                         key={item.id}
                         href={`/product/${item.id}`}
-                        className="border p-3 rounded hover:shadow"
+                        className="group rounded-2xl border border-border bg-card p-3 shadow-sm hover:-translate-y-1 hover:shadow-lg transition"
                     >
-                        <Image
-                            src={item.imageUrl}
-                            alt={item.name}
-                            width={300}
-                            height={300}
-                            className="object-cover rounded"
-                        />
+                        <div className="aspect-square overflow-hidden rounded-xl bg-muted">
+                            <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                width={300}
+                                height={300}
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                            />
+                        </div>
 
-                        <p className="font-semibold mt-2">{item.name}</p>
-                        <p className="text-blue-600 font-bold">
-                            {item.price.toLocaleString()}đ
+                        <p className="font-semibold mt-3 text-foreground line-clamp-2">{item.name}</p>
+                        <p className="text-base font-bold text-foreground mt-1">
+                            {item.price.toLocaleString("vi-VN")}đ
                         </p>
                     </Link>
                 ))}

@@ -6,6 +6,7 @@ import Footer from "@/components/shared/Footer";
 import { Order } from "@/features/orders/type";
 import { getOrderById, requestVnPayPayment } from "@/features/orders/services/orderService";
 import { useRouter, useParams } from "next/navigation";
+import { ShieldCheck, Truck } from "lucide-react";
 
 export default function OrderDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -29,21 +30,25 @@ export default function OrderDetailPage() {
     }, [id]);
 
     return (
-        <div className="bg-gray-50 min-h-screen">
+        <div className="bg-background min-h-screen">
             <Navbar />
-            <div className="pt-20 max-w-3xl mx-auto p-6">
-                <h1 className="text-2xl font-bold text-blue-600 mb-4">Hoá đơn của bạn</h1>
+            <main className="max-w-5xl mx-auto px-6 pt-[calc(var(--header-height)+12px)] lg:pt-[calc(var(--header-height)+16px)] pb-16">
+                <div className="flex flex-col gap-2 mb-6">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Đơn hàng</p>
+                    <h1 className="text-3xl font-semibold text-foreground">Chi tiết hoá đơn</h1>
+                    <p className="text-sm text-muted-foreground">Xem thông tin giao hàng và thanh toán.</p>
+                </div>
 
-                <div className="bg-white rounded-xl shadow p-5">
-                    {loading && <p>Đang tải hoá đơn...</p>}
-                    {error && <p className="text-red-500 mb-3">{error}</p>}
+                <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                    {loading && <p className="text-sm text-muted-foreground">Đang tải hoá đơn...</p>}
+                    {error && <p className="text-sm text-destructive mb-3">{error}</p>}
 
                     {!loading && !order ? (
-                        <div className="text-gray-600">
+                        <div className="text-muted-foreground text-sm">
                             <p>Không tìm thấy hoá đơn.</p>
                             <button
                                 onClick={() => router.push("/homepage")}
-                                className="mt-3 text-blue-600 underline"
+                                className="mt-3 text-primary underline"
                             >
                                 Quay lại mua sắm
                             </button>
@@ -51,55 +56,65 @@ export default function OrderDetailPage() {
                     ) : null}
 
                     {order && (
-                        <div className="space-y-3 text-gray-800">
-                            <div className="flex justify-between">
-                                <span>Mã đơn:</span>
-                                <span className="font-semibold">#{order.id}</span>
+                        <div className="space-y-4 text-sm text-foreground">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-xl border border-border/70 bg-muted/50 p-3 space-y-1">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Mã đơn</p>
+                                    <p className="text-lg font-semibold">#{order.id}</p>
+                                    <p className="text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p>
+                                </div>
+                                <div className="rounded-xl border border-border/70 bg-muted/50 p-3 space-y-1">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Thanh toán</p>
+                                    <p className="font-semibold">
+                                        {order.paymentMethod === "VNPAY"
+                                            ? "VNPAY"
+                                            : order.paymentMethod === "BANK_TRANSFER"
+                                                ? "Chuyển khoản"
+                                                : "COD"} ({order.paymentStatus})
+                                    </p>
+                                    <p className="text-muted-foreground">Trạng thái: {order.status}</p>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span>Thanh toán:</span>
-                                <span className="font-semibold">
-                                    {order.paymentMethod === "VNPAY"
-                                        ? "VNPAY"
-                                        : order.paymentMethod === "BANK_TRANSFER"
-                                            ? "Chuyển khoản"
-                                            : "COD"} ({order.paymentStatus})
-                                </span>
+
+                            <div className="rounded-xl border border-border/70 bg-background p-3 space-y-1">
+                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tổng tiền</p>
+                                <p className="text-xl font-bold text-foreground">{order.totalAmount.toLocaleString("vi-VN")}đ</p>
                             </div>
-                            <div className="flex justify-between">
-                                <span>Trạng thái:</span>
-                                <span className="font-semibold">{order.status}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Tổng tiền:</span>
-                                <span className="font-semibold">{order.totalAmount.toLocaleString()}đ</span>
-                            </div>
+
                             {(order.shippingName || order.shippingAddress) && (
-                                <div className="pt-2 border-t">
-                                    <p className="font-semibold mb-1">Giao tới:</p>
-                                    <p>{order.shippingName}</p>
+                                <div className="rounded-xl border border-border/70 bg-background p-4 space-y-1">
+                                    <div className="flex items-center gap-2 text-foreground">
+                                        <Truck size={16} />
+                                        <p className="text-sm font-semibold">Giao tới</p>
+                                    </div>
+                                    <p className="font-semibold">{order.shippingName}</p>
                                     <p>{order.shippingPhone}</p>
-                                    <p>
+                                    <p className="text-muted-foreground">
                                         {order.shippingAddress}
                                         {order.shippingWard ? `, ${order.shippingWard}` : ""}
                                         {order.shippingDistrict ? `, ${order.shippingDistrict}` : ""}
                                         {order.shippingCity ? `, ${order.shippingCity}` : ""}
                                     </p>
-                                    {order.shippingNote && <p className="text-sm text-gray-600">Ghi chú: {order.shippingNote}</p>}
+                                    {order.shippingNote && <p className="text-muted-foreground text-xs">Ghi chú: {order.shippingNote}</p>}
                                 </div>
                             )}
-                            <div>
-                                <p className="font-semibold mb-1">Sản phẩm:</p>
-                                <div className="space-y-1 text-sm">
+
+                            <div className="rounded-xl border border-border/70 bg-background p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <ShieldCheck size={16} />
+                                    <p className="text-sm font-semibold">Sản phẩm</p>
+                                </div>
+                                <div className="space-y-1">
                                     {order.items.map(it => (
                                         <div key={it.productId} className="flex justify-between">
                                             <span>{it.productName} x{it.quantity}</span>
-                                            <span>{it.unitPrice.toLocaleString()}đ</span>
+                                            <span>{it.unitPrice.toLocaleString("vi-VN")}đ</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                            <div className="flex gap-4 pt-2">
+
+                            <div className="flex gap-3 flex-wrap pt-2">
                                 {order.paymentMethod === "VNPAY" && order.paymentStatus === "PENDING" && (
                                     <button
                                         onClick={async () => {
@@ -113,7 +128,7 @@ export default function OrderDetailPage() {
                                                 setPaying(false);
                                             }
                                         }}
-                                        className="text-white bg-blue-600 px-3 py-2 rounded-lg text-sm disabled:opacity-60"
+                                        className="rounded-full bg-foreground px-4 py-2 text-sm font-semibold text-background hover:bg-foreground/90 disabled:opacity-60"
                                         disabled={paying}
                                     >
                                         {paying ? "Đang mở VNPAY..." : "Thanh toán ngay"}
@@ -121,21 +136,21 @@ export default function OrderDetailPage() {
                                 )}
                                 <button
                                     onClick={() => router.push("/orders")}
-                                    className="text-blue-600 underline"
+                                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground hover:border-foreground"
                                 >
-                                    Xem lịch sử đơn hàng
+                                    Xem lịch sử đơn
                                 </button>
                                 <button
                                     onClick={() => router.push("/homepage")}
-                                    className="text-blue-600 underline"
+                                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground hover:border-foreground"
                                 >
                                     Tiếp tục mua sắm
                                 </button>
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </section>
+            </main>
             <Footer />
         </div>
     );
