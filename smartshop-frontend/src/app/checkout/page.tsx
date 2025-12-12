@@ -3,7 +3,7 @@
 import { useCart } from "@/features/cart/hooks/useCart";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { createOrder } from "@/features/orders/services/orderService";
+import { createOrder, requestVnPayPayment } from "@/features/orders/services/orderService";
 import { useRouter } from "next/navigation";
 import { Order } from "@/features/orders/type";
 import { getProfile } from "@/features/profile/services/profileService";
@@ -13,7 +13,7 @@ export default function CheckoutPage() {
     const router = useRouter();
 
     const [shippingMethod, setShippingMethod] = useState("standard");
-    const [paymentMethod, setPaymentMethod] = useState<"COD" | "BANK_TRANSFER">("COD");
+    const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
     const [placing, setPlacing] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
@@ -92,11 +92,12 @@ export default function CheckoutPage() {
             } catch {
                 // ignore storage error
             }
-            if (order.paymentMethod === "BANK_TRANSFER") {
-                router.push(`/orders/${order.id}/payment`);
-            } else {
-                router.push(`/orders/${order.id}`);
+            if (order.paymentMethod === "VNPAY") {
+                const payment = await requestVnPayPayment(order.id);
+                window.location.href = payment.paymentUrl;
+                return;
             }
+            router.push(`/orders/${order.id}`);
         } catch (err: any) {
             const msg = err?.response?.data?.message || "Đặt hàng thất bại. Vui lòng đăng nhập và thử lại.";
             setMessage(msg);
@@ -227,12 +228,12 @@ export default function CheckoutPage() {
                         </label>
 
                         <label className="flex justify-between p-3 border rounded-lg cursor-pointer">
-                            <span>Chuyển khoản ngân hàng</span>
+                            <span>Thanh toán qua ngân hàng (VNPAY)</span>
                             <input
                                 type="radio"
                                 name="payment"
-                                checked={paymentMethod === "BANK_TRANSFER"}
-                                onChange={() => setPaymentMethod("BANK_TRANSFER")}
+                                checked={paymentMethod === "VNPAY"}
+                                onChange={() => setPaymentMethod("VNPAY")}
                             />
                         </label>
                     </div>

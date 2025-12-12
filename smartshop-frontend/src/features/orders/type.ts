@@ -8,7 +8,7 @@ export interface OrderItem {
 export interface Order {
     id: number;
     status: string;
-    paymentMethod: "COD" | "BANK_TRANSFER";
+    paymentMethod: "COD" | "BANK_TRANSFER" | "VNPAY";
     paymentStatus: "PENDING" | "PAID";
     paymentCode?: string;
     totalAmount: number;
@@ -29,7 +29,7 @@ export interface CreateOrderPayload {
         quantity: number;
     }[];
 
-    paymentMethod: "COD" | "BANK_TRANSFER";
+    paymentMethod: "COD" | "VNPAY";
     shippingName: string;
     shippingPhone: string;
     shippingAddress: string;

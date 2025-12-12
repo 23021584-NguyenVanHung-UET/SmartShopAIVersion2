@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/shared/Footer";
 import { Order } from "@/features/orders/type";
-import { getOrderById } from "@/features/orders/services/orderService";
+import { getOrderById, requestVnPayPayment } from "@/features/orders/services/orderService";
 import { useRouter, useParams } from "next/navigation";
 
 export default function OrderDetailPage() {
@@ -12,6 +12,7 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [paying, setPaying] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -57,7 +58,13 @@ export default function OrderDetailPage() {
                             </div>
                             <div className="flex justify-between">
                                 <span>Thanh toán:</span>
-                                <span className="font-semibold">{order.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản" : "COD"} ({order.paymentStatus})</span>
+                                <span className="font-semibold">
+                                    {order.paymentMethod === "VNPAY"
+                                        ? "VNPAY"
+                                        : order.paymentMethod === "BANK_TRANSFER"
+                                            ? "Chuyển khoản"
+                                            : "COD"} ({order.paymentStatus})
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Trạng thái:</span>
@@ -67,12 +74,6 @@ export default function OrderDetailPage() {
                                 <span>Tổng tiền:</span>
                                 <span className="font-semibold">{order.totalAmount.toLocaleString()}đ</span>
                             </div>
-                            {order.paymentMethod === "BANK_TRANSFER" && (
-                                <div className="flex justify-between">
-                                    <span>Mã chuyển khoản:</span>
-                                    <span className="font-semibold">{order.paymentCode}</span>
-                                </div>
-                            )}
                             {(order.shippingName || order.shippingAddress) && (
                                 <div className="pt-2 border-t">
                                     <p className="font-semibold mb-1">Giao tới:</p>
@@ -99,12 +100,23 @@ export default function OrderDetailPage() {
                                 </div>
                             </div>
                             <div className="flex gap-4 pt-2">
-                                {order.paymentMethod === "BANK_TRANSFER" && (
+                                {order.paymentMethod === "VNPAY" && order.paymentStatus === "PENDING" && (
                                     <button
-                                        onClick={() => router.push(`/orders/${order.id}/payment`)}
-                                        className="text-blue-600 underline"
+                                        onClick={async () => {
+                                            setPaying(true);
+                                            try {
+                                                const payment = await requestVnPayPayment(order.id);
+                                                window.location.href = payment.paymentUrl;
+                                            } catch {
+                                                setError("Không tạo được liên kết thanh toán. Đăng nhập và thử lại.");
+                                            } finally {
+                                                setPaying(false);
+                                            }
+                                        }}
+                                        className="text-white bg-blue-600 px-3 py-2 rounded-lg text-sm disabled:opacity-60"
+                                        disabled={paying}
                                     >
-                                        Hướng dẫn chuyển khoản
+                                        {paying ? "Đang mở VNPAY..." : "Thanh toán ngay"}
                                     </button>
                                 )}
                                 <button

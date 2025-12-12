@@ -14,6 +14,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -61,6 +62,15 @@ public class Order extends BaseAuditEntity {
 
     @Column(name = "payment_code", length = 64)
     private String paymentCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+    @Column(name = "payment_transaction_no", length = 64)
+    private String paymentTransactionNo;
+
+    @Column(name = "payment_bank_code", length = 32)
+    private String paymentBankCode;
+
+    @Column(name = "payment_pay_date")
+    private Instant paymentPayDate;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();

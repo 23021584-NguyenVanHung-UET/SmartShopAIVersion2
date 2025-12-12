@@ -22,3 +22,11 @@ export const confirmBankTransfer = async (orderId: number, code: string): Promis
     });
     return res.data;
 };
+
+export const requestVnPayPayment = async (orderId: number, bankCode?: string) => {
+    const res = await axios.post<{ paymentUrl: string; paymentCode: string; expireAt: string }>(
+        "/public/payments/vnpay",
+        { orderId, bankCode: bankCode || "" }
+    );
+    return res.data;
+};

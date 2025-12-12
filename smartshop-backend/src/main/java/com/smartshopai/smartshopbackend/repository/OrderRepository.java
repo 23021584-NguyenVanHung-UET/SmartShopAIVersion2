@@ -18,6 +18,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @EntityGraph(attributePaths = {"items", "items.product"})
     java.util.Optional<Order> findByIdAndPaymentCode(Long id, String paymentCode);
 
+    @EntityGraph(attributePaths = {"items", "items.product"})
+    java.util.Optional<Order> findByPaymentCode(String paymentCode);
+
     @Query("SELECT o FROM Order o LEFT JOIN FETCH o.user LEFT JOIN FETCH o.items")
     List<Order> findAllWithUserAndItems();
 
