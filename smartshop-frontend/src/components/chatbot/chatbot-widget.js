@@ -10,6 +10,7 @@ export class ChatbotWidget {
     this.position = position;
     this.messages = [];
     this.isOpen = true;
+    this.isMinimized = false;
     this.createWidget();
   }
 
@@ -38,7 +39,45 @@ export class ChatbotWidget {
         display: flex;
         flex-direction: column;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        transition: transform 0.3s ease, opacity 0.3s ease;
+        transition: all 0.3s ease;
+        overflow: hidden;
+      }
+      
+      .chatbot-container.minimized {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .chatbot-container.minimized .chatbot-header {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0;
+        border-radius: 50%;
+        background: #000;
+        color: white;
+        font-size: 24px;
+      }
+      
+      .chatbot-container.minimized .chatbot-header span {
+        font-size: 24px;
+      }
+      
+      .chatbot-container.minimized .chatbot-actions {
+        display: none;
+      }
+      
+      .chatbot-container.minimized .chatbot-messages,
+      .chatbot-container.minimized .typing-indicator,
+      .chatbot-container.minimized .chatbot-input-area {
+        display: none !important;
       }
       
       .chatbot-header {
@@ -114,13 +153,6 @@ export class ChatbotWidget {
         color: #000;
         border: 1px solid #ddd;
         border-bottom-left-radius: 4px;
-      }
-      
-      .message.typing {
-        background: #f0f0f0;
-        color: #666;
-        font-style: italic;
-        border: 1px solid #eee;
       }
       
       .chatbot-input-area {
@@ -230,17 +262,23 @@ export class ChatbotWidget {
           right: 10px !important;
           top: auto !important;
         }
+        
+        .chatbot-container.minimized {
+          width: 50px;
+          height: 50px;
+          bottom: 10px !important;
+          right: 10px !important;
+        }
       }
     `;
     document.head.appendChild(style);
 
-    // Tạo nội dung widget
+    // Tạo nội dung widget - CHỈ CÒN NÚT MINIMIZE
     this.container.innerHTML = `
       <div class="chatbot-header">
         <span>${this.title}</span>
         <div class="chatbot-actions">
           <button class="chatbot-minimize" title="Thu nhỏ">−</button>
-          <button class="chatbot-close" title="Đóng">×</button>
         </div>
       </div>
       
@@ -271,7 +309,7 @@ export class ChatbotWidget {
     this.sendBtn = this.container.querySelector(".chatbot-send");
     this.typingEl = this.container.querySelector(".typing-indicator");
     this.minimizeBtn = this.container.querySelector(".chatbot-minimize");
-    this.closeBtn = this.container.querySelector(".chatbot-close");
+    this.header = this.container.querySelector(".chatbot-header");
 
     // Gắn sự kiện
     this.bindEvents();
@@ -292,26 +330,16 @@ export class ChatbotWidget {
       if (e.key === "Enter") this.sendMessage();
     });
     
-    // Thu nhỏ widget
-    this.minimizeBtn.addEventListener("click", () => {
-      const isMinimized = this.messagesEl.style.display === "none";
-      this.messagesEl.style.display = isMinimized ? "flex" : "none";
-      this.typingEl.style.display = "none";
-      this.inputEl.parentElement.style.display = isMinimized ? "flex" : "none";
-      this.minimizeBtn.textContent = isMinimized ? "−" : "+";
-      this.minimizeBtn.title = isMinimized ? "Thu nhỏ" : "Mở rộng";
+    // Toggle thu nhỏ/phóng to
+    this.minimizeBtn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+      this.toggleMinimize();
     });
     
-    // Đóng widget
-    this.closeBtn.addEventListener("click", () => {
-      this.container.style.display = "none";
-      this.isOpen = false;
-    });
-    
-    // Click ra ngoài để đóng (tuỳ chọn)
-    document.addEventListener("click", (e) => {
-      if (!this.container.contains(e.target) && e.target.className !== "chatbot-toggle") {
-        // Có thể thêm logic đóng khi click ra ngoài nếu muốn
+    // Click vào header khi thu nhỏ để mở lại
+    this.header.addEventListener("click", (e) => {
+      if (this.isMinimized) {
+        this.toggleMinimize();
       }
     });
     
@@ -323,6 +351,38 @@ export class ChatbotWidget {
         this.sendBtn.disabled = true;
       }
     });
+  }
+
+  toggleMinimize() {
+    this.isMinimized = !this.isMinimized;
+    this.container.classList.toggle("minimized");
+    
+    if (this.isMinimized) {
+      // Khi thu nhỏ: hiển thị icon chat
+      this.header.innerHTML = `
+        <span>💬</span>
+      `;
+      this.header.title = "Nhấn để mở chatbot";
+    } else {
+      // Khi mở rộng: hiển thị đầy đủ
+      this.header.innerHTML = `
+        <span>${this.title}</span>
+        <div class="chatbot-actions">
+          <button class="chatbot-minimize" title="Thu nhỏ">−</button>
+        </div>
+      `;
+      this.header.title = "";
+      
+      // Cập nhật lại event listener cho nút minimize mới
+      const newMinimizeBtn = this.container.querySelector(".chatbot-minimize");
+      newMinimizeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.toggleMinimize();
+      });
+      
+      // Focus vào input
+      setTimeout(() => this.inputEl.focus(), 100);
+    }
   }
 
   addMessage(text, sender = "user") {
@@ -380,7 +440,7 @@ export class ChatbotWidget {
       
       // Gọi API với timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       const response = await fetch(this.apiUrl, {
         method: "POST",
@@ -436,6 +496,9 @@ export class ChatbotWidget {
 
   // Public methods
   open() {
+    if (this.isMinimized) {
+      this.toggleMinimize();
+    }
     this.container.style.display = "flex";
     this.isOpen = true;
     setTimeout(() => this.inputEl.focus(), 100);
