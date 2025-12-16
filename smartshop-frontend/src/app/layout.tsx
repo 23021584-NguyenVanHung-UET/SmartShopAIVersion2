@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ChatbotWrapper from "../components/chatbot/ChatbotWrapper"; // client wrapper widget
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SmartShop - Mua sắm thông minh",
-  description: "SmartShop: giao diện lấy cảm hứng từ Shopify, mua sắm thông minh với gợi ý AI",
+  description:
+    "SmartShop: giao diện lấy cảm hứng từ Shopify, mua sắm thông minh với gợi ý AI",
 };
 
 export default function RootLayout({
@@ -26,6 +28,8 @@ export default function RootLayout({
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        {/* Widget chatbot hiển thị toàn site */}
+        <ChatbotWrapper />
       </body>
     </html>
   );
