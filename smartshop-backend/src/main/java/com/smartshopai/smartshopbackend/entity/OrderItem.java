@@ -17,6 +17,7 @@ import lombok.Setter;
 @Table(name = "order_items")
 @Getter
 @Setter
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class OrderItem extends BaseAuditEntity {
 
     @Id

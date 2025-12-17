@@ -31,11 +31,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        final String requestPath = request.getRequestURI();
-        final String method = request.getMethod();
-
-        // 🔍 DEBUG: Log every request hitting the filter
-        System.out.println(">>> JwtAuthFilter: " + method + " " + requestPath);
 
         String jwt = null;
         String username = null;
@@ -46,14 +41,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             try {
                 username = jwtService.extractUsername(jwt);
-                System.out.println(">>> Username extracted: " + username);
             } catch (Exception e) {
-                System.out.println(">>> JWT Extraction Failed: " + e.getMessage());
-            }
-        } else {
-            // Only log for API requests to avoid noise
-            if (requestPath.startsWith("/api/")) {
-                System.out.println(">>> No Bearer token found in header: " + authHeader);
+                System.out.println("JWT không hợp lệ: " + e.getMessage());
             }
         }
 
@@ -75,8 +64,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 // Gán user vào SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-            } else {
-                System.out.println(">>> Token INVALID for user: " + username);
             }
         }
 
