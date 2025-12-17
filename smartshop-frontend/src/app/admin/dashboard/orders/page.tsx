@@ -122,14 +122,13 @@ export default function OrdersPage() {
   };
 
   const handleSaveEdit = async () => {
+    console.log("handleSaveEdit called for Order");
+    console.log("Edit Payload:", editFormData);
     if (selectedOrder && editFormData) {
       try {
-        // Update order status if changed
-        // if (editFormData.status && editFormData.status !== selectedOrder.status) {
-        //   await ordersApi.updateStatus(selectedOrder.id, editFormData.status);
-        // }
-        // Switch to generic update that handles all fields including status
+        console.log("Sending update to backend...");
         await ordersApi.update(selectedOrder.id, editFormData);
+        console.log("Update success");
 
         setOrders(orders.map(o =>
           o.id === selectedOrder.id ? { ...o, ...editFormData } : o
@@ -137,9 +136,11 @@ export default function OrdersPage() {
         setEditModalOpen(false);
         setSelectedOrder(null);
         setEditFormData({});
-      } catch (err) {
+        alert("Cập nhật đơn hàng thành công!");
+      } catch (err: any) {
         console.error('Error updating order:', err);
-        alert('Failed to update order');
+        const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
+        alert(`Failed to update order: ${errorMessage}`);
       }
     }
   };
