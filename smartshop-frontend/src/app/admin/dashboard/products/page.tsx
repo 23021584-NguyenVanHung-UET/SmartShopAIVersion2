@@ -140,6 +140,48 @@ export default function ProductsPage() {
     }
   };
 
+  const handleCreateProduct = async () => {
+    console.log("handleCreateProduct triggered");
+    console.log("Current Form Data:", editFormData);
+
+    try {
+      if (!editFormData.name) {
+        alert("Vui lòng nhập tên sản phẩm!");
+        return;
+      }
+      if (editFormData.price === undefined || editFormData.price === null) {
+        alert("Vui lòng nhập giá sản phẩm!");
+        return;
+      }
+      if (!editFormData.category) {
+        alert("Vui lòng chọn danh mục!");
+        return;
+      }
+      if (editFormData.stock === undefined || editFormData.stock === null) {
+        // Default stock to 0 if not set, or alert. Let's default or just warn.
+        // currently strict.
+        alert("Vui lòng nhập số lượng tồn kho!");
+        return;
+      }
+
+      console.log("Validation passed. Sending API request...");
+      await productsApi.create(editFormData);
+      console.log("API request success");
+
+      alert("Thêm sản phẩm thành công!");
+
+      // Refresh list
+      const response = await productsApi.getAll(0, itemsPerPage) as any;
+      setTotalElements(response.totalElements);
+      window.location.reload();
+
+    } catch (err: any) {
+      console.error('Error creating product:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
+      alert(`Failed to create product: ${errorMessage}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -182,7 +224,10 @@ export default function ProductsPage() {
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setEditFormData({}); // Clear previous data
+            setShowAddModal(true);
+          }}
           className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2"
         >
           <Plus size={20} />
@@ -497,34 +542,100 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Modal Thêm sản phẩm (đơn giản) */}
+      {/* Modal Thêm sản phẩm */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Thêm sản phẩm mới</h2>
             </div>
             <div className="p-6 space-y-6">
-              {/* Form đơn giản */}
               <div className="grid grid-cols-2 gap-4">
-                <input placeholder="Tên sản phẩm" className="px-4 py-3 rounded-xl border" />
-                <input placeholder="Giá (VND)" type="number" className="px-4 py-3 rounded-xl border" />
-                <select className="px-4 py-3 rounded-xl border">
-                  <option>Chọn danh mục</option>
-                  <option>Áo</option>
-                  <option>Quần</option>
-                </select>
-                <input placeholder="Tồn kho" type="number" className="px-4 py-3 rounded-xl border" />
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tên sản phẩm <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    placeholder="Nhập tên sản phẩm"
+                    value={editFormData.name || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giá (VND) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={editFormData.price || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, price: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tồn kho <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={editFormData.stock || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, stock: Number(e.target.value) })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Danh mục <span className="text-red-500">*</span></label>
+                  <select
+                    value={editFormData.category || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categories.filter(c => c !== "all").map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
+                  <select
+                    value={editFormData.status || 'active'}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  >
+                    <option value="active">Đang bán</option>
+                    <option value="inactive">Tạm ẩn</option>
+                    <option value="out_of_stock">Hết hàng</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mô tả</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Mô tả sản phẩm..."
+                    // Note: Product interface in this file doesn't have description, but backend does. 
+                    // Use a temporary cast or just ignore for strict typing if needed, but best to add to interface.
+                    // For now, let's assume mapping might ignore it if we don't fix the interface, but let's try.
+                    // Actually, let's stick to core fields or add description to Product interface first?
+                    // The backend DTO has description. Let's add it to the state.
+                    // casting to any to avoid TS error quickly, or we update interface in next step.
+                    value={(editFormData as any).description || ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value } as any)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  />
+                </div>
               </div>
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditFormData({});
+                  }}
                   className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                 >
                   Hủy
                 </button>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  type="button"
+                  onClick={handleCreateProduct}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition"
                 >
                   Thêm sản phẩm

@@ -19,7 +19,8 @@ public class ProductAdminController {
     private final ProductService service;
 
     @GetMapping
-    public Page<Product> getAllProducts(Pageable pageable) {
+    public Page<Product> getAllProducts(
+            @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
         return service.findAll(pageable);
     }
 

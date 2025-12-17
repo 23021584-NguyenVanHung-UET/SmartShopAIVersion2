@@ -12,6 +12,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class ProductService {
 
     private final ProductRepository repo;
@@ -65,16 +66,15 @@ public class ProductService {
         product.setStatus(request.getStatus());
 
         if (request.getCategory() != null) {
-            // Find category by name or create/throw? For now, find by name.
-            // Assumption: Frontend sends valid category names.
-            com.smartshopai.smartshopbackend.entity.Category cat = categoryRepository.findByName(request.getCategory())
-                    .orElse(null);
-            // If found, set it. If not found (e.g. "Uncategorized" or new), maybe keep old
-            // or strict error?
-            // Let's try to set if found.
-            if (cat != null) {
-                product.setCategory(cat);
-            }
+            com.smartshopai.smartshopbackend.entity.Category category = categoryRepository
+                    .findByName(request.getCategory())
+                    .orElseGet(() -> {
+                        com.smartshopai.smartshopbackend.entity.Category newCat = new com.smartshopai.smartshopbackend.entity.Category();
+                        newCat.setName(request.getCategory());
+                        newCat.setSlug(request.getCategory().toLowerCase().replaceAll("[^a-z0-9]", "-"));
+                        return categoryRepository.save(newCat);
+                    });
+            product.setCategory(category);
         }
 
         return repo.save(product);
@@ -90,8 +90,16 @@ public class ProductService {
         product.setStatus(request.getStatus() != null ? request.getStatus() : "active");
 
         if (request.getCategory() != null) {
-            categoryRepository.findByName(request.getCategory())
-                    .ifPresent(product::setCategory);
+            com.smartshopai.smartshopbackend.entity.Category category = categoryRepository
+                    .findByName(request.getCategory())
+                    .orElseGet(() -> {
+                        com.smartshopai.smartshopbackend.entity.Category newCat = new com.smartshopai.smartshopbackend.entity.Category();
+                        newCat.setName(request.getCategory());
+                        // Generate simplified slug
+                        newCat.setSlug(request.getCategory().toLowerCase().replaceAll("[^a-z0-9]", "-"));
+                        return categoryRepository.save(newCat);
+                    });
+            product.setCategory(category);
         }
 
         return repo.save(product);

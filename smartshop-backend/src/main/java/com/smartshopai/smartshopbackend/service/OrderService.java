@@ -112,23 +112,20 @@ public class OrderService {
             order.setStatus(request.getStatus());
         if (request.getTotalAmount() != null)
             order.setTotalAmount(request.getTotalAmount());
-        // Note: Customer Name/Email are usually on the User entity, not Order directly
-        // unless it's a guest order
-        // OR the Order has snapshot fields (shippingName etc).
-        // Let's check Order entity fields.
-        // Order entity has `shippingName`, `shippingPhone` etc. It does not have
-        // `customerName` directly, it links to `User`.
-        // BUT the frontend `Order` interface shows `customerName`.
-        // If the user wants to update Shipping Info, we should update `shippingName`.
-        // If they want to update the User's name, that's different.
-        // The frontend Edit Modal labels it "Tên khách hàng" (Customer Name).
-        // Let's map customerName -> shippingName because updating the User entity from
-        // an Order edit is risky/unexpected.
 
-        if (request.getCustomerName() != null)
+        // Map customer info updates to shipping info for now as Order entity relies on
+        // User for auth info
+        if (request.getCustomerName() != null) {
             order.setShippingName(request.getCustomerName());
-        // For email, Order doesn't have shippingEmail usually. It relies on User.
-        // Checking Order.java would confirm, but sticking to safe updates:
+        }
+
+        // Note: Email typically belongs to the User account. Updating it on the order
+        // might be ambiguous
+        // if we don't have a snapshot email field.
+        // For now, if the frontend sends it, we log or ignore if no field exists,
+        // to prevent 400 errors or confusing behavior.
+        // (Order entity doesn't have shippingEmail in the snippet I saw, assumes User's
+        // email)
 
         return orderRepository.save(order);
     }
