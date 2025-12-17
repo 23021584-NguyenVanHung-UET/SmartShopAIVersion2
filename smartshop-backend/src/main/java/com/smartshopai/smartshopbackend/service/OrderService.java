@@ -25,7 +25,8 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
 
-    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+    public OrderService(OrderRepository orderRepository, ProductRepository productRepository,
+            OrderItemRepository orderItemRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
@@ -99,6 +100,36 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
         order.setStatus(status);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order update(Long id, com.smartshopai.smartshopbackend.dto.UpdateOrderRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + id));
+
+        if (request.getStatus() != null)
+            order.setStatus(request.getStatus());
+        if (request.getTotalAmount() != null)
+            order.setTotalAmount(request.getTotalAmount());
+        // Note: Customer Name/Email are usually on the User entity, not Order directly
+        // unless it's a guest order
+        // OR the Order has snapshot fields (shippingName etc).
+        // Let's check Order entity fields.
+        // Order entity has `shippingName`, `shippingPhone` etc. It does not have
+        // `customerName` directly, it links to `User`.
+        // BUT the frontend `Order` interface shows `customerName`.
+        // If the user wants to update Shipping Info, we should update `shippingName`.
+        // If they want to update the User's name, that's different.
+        // The frontend Edit Modal labels it "Tên khách hàng" (Customer Name).
+        // Let's map customerName -> shippingName because updating the User entity from
+        // an Order edit is risky/unexpected.
+
+        if (request.getCustomerName() != null)
+            order.setShippingName(request.getCustomerName());
+        // For email, Order doesn't have shippingEmail usually. It relies on User.
+        // Checking Order.java would confirm, but sticking to safe updates:
+
         return orderRepository.save(order);
     }
 

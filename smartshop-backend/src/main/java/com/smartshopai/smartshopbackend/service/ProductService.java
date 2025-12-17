@@ -16,8 +16,12 @@ public class ProductService {
 
     private final ProductRepository repo;
 
-    public ProductService(ProductRepository repo) {
+    private final com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository;
+
+    public ProductService(ProductRepository repo,
+            com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository) {
         this.repo = repo;
+        this.categoryRepository = categoryRepository;
     }
 
     public List<Product> getAll() {
@@ -46,6 +50,50 @@ public class ProductService {
     }
 
     public Product save(Product product) {
+        return repo.save(product);
+    }
+
+    // New update method using DTO
+    public Product update(Long id, com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        Product product = getById(id);
+
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
+        product.setStatus(request.getStatus());
+
+        if (request.getCategory() != null) {
+            // Find category by name or create/throw? For now, find by name.
+            // Assumption: Frontend sends valid category names.
+            com.smartshopai.smartshopbackend.entity.Category cat = categoryRepository.findByName(request.getCategory())
+                    .orElse(null);
+            // If found, set it. If not found (e.g. "Uncategorized" or new), maybe keep old
+            // or strict error?
+            // Let's try to set if found.
+            if (cat != null) {
+                product.setCategory(cat);
+            }
+        }
+
+        return repo.save(product);
+    }
+
+    public Product create(com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : "active");
+
+        if (request.getCategory() != null) {
+            categoryRepository.findByName(request.getCategory())
+                    .ifPresent(product::setCategory);
+        }
+
         return repo.save(product);
     }
 

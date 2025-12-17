@@ -1,7 +1,7 @@
 // app/dashboard/profile/page.tsx
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { getCurrentUser } from "@/features/auth/services/authService";
+import { getCurrentUser, updateProfile } from "@/features/auth/services/authService";
 import {
   User,
   Mail,
@@ -92,9 +92,22 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  const handleSave = () => {
-    setEditing(false);
-    // API call here
+  const handleSave = async () => {
+    try {
+      setEditing(false);
+      await updateProfile({
+        name: user.name,
+        phone: user.phone,
+        address: user.address,
+        bio: user.bio,
+        // Add other fields when available
+      });
+      // Optionally re-fetch user or show success toast
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      // Optionally show error toast
+      setEditing(true); // Re-enable editing on error
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {

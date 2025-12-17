@@ -124,6 +124,11 @@ export const ordersApi = {
         return response.data;
     },
 
+    update: async (id: number, order: any) => {
+        const response = await axios.put(`/admin/orders/${id}`, order);
+        return response.data;
+    },
+
     delete: async (id: number) => {
         await axios.delete(`/admin/orders/${id}`);
     },

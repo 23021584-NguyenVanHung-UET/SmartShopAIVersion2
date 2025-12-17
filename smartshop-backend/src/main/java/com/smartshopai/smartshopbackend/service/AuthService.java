@@ -134,4 +134,40 @@ public class AuthService {
         return Map.of("message", "Đặt lại mật khẩu thành công");
     }
 
+    @Transactional
+    public UserProfileResponse updateProfile(String token,
+            com.smartshopai.smartshopbackend.dto.UpdateProfileRequest request) {
+        String email = jwtService.extractUsername(token);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getName() != null)
+            user.setName(request.getName());
+        if (request.getPhone() != null)
+            user.setPhone(request.getPhone());
+        if (request.getAddress() != null)
+            user.setAddress(request.getAddress());
+        if (request.getCity() != null)
+            user.setCity(request.getCity());
+        if (request.getDistrict() != null)
+            user.setDistrict(request.getDistrict());
+        if (request.getWard() != null)
+            user.setWard(request.getWard());
+        if (request.getBio() != null)
+            user.setBio(request.getBio());
+
+        userRepository.save(user);
+
+        return new UserProfileResponse(
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getPhone(),
+                user.getAddress(),
+                user.getCity(),
+                user.getDistrict(),
+                user.getWard());
+    }
+
 }

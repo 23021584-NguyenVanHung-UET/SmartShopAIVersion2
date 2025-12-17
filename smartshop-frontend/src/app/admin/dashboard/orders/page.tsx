@@ -125,9 +125,11 @@ export default function OrdersPage() {
     if (selectedOrder && editFormData) {
       try {
         // Update order status if changed
-        if (editFormData.status && editFormData.status !== selectedOrder.status) {
-          await ordersApi.updateStatus(selectedOrder.id, editFormData.status);
-        }
+        // if (editFormData.status && editFormData.status !== selectedOrder.status) {
+        //   await ordersApi.updateStatus(selectedOrder.id, editFormData.status);
+        // }
+        // Switch to generic update that handles all fields including status
+        await ordersApi.update(selectedOrder.id, editFormData);
 
         setOrders(orders.map(o =>
           o.id === selectedOrder.id ? { ...o, ...editFormData } : o

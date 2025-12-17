@@ -45,4 +45,7 @@ public class User extends BaseAuditEntity {
     private String district;
     private String city;
     private String postalCode;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
 }

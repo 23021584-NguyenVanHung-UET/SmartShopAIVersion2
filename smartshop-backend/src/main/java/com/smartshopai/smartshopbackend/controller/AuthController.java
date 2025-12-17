@@ -59,4 +59,16 @@ public class AuthController {
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.ok(authService.resetPassword(request));
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody com.smartshopai.smartshopbackend.dto.UpdateProfileRequest request) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            return ResponseEntity.ok(authService.updateProfile(token, request));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
