@@ -43,6 +43,9 @@ public class UserAdminController {
                 .map(existingUser -> {
                     existingUser.setName(user.getName());
                     existingUser.setEmail(user.getEmail());
+                    existingUser.setRole(user.getRole());
+                    existingUser.setEnabled(user.isEnabled());
+
                     if (user.getPassword() != null && !user.getPassword().isEmpty()) {
                         existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
                     }
@@ -77,9 +80,6 @@ public class UserAdminController {
         if (query == null || query.trim().isEmpty()) {
             return userRepository.findAll(pageable);
         }
-        // Search by name or email containing the query
-        return userRepository.findAll(pageable);
-        // In production, you'd use:
-        // userRepository.findByNameContainingOrEmailContaining(query, query, pageable);
+        return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(query, query, pageable);
     }
 }

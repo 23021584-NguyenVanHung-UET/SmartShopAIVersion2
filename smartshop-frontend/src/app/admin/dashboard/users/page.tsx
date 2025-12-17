@@ -31,13 +31,19 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<User>>({});
 
-  // Fetch users from API
+  // Fetch users from API (Server-side search)
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await usersApi.getAll(currentPage - 1, itemsPerPage) as any;
+
+        let response: any;
+        if (searchTerm) {
+          response = await usersApi.search(searchTerm, currentPage - 1, itemsPerPage);
+        } else {
+          response = await usersApi.getAll(currentPage - 1, itemsPerPage);
+        }
 
         // Map backend response to frontend format
         const mappedUsers = response.content.map((u: any) => ({
@@ -60,22 +66,16 @@ export default function UsersPage() {
       }
     };
 
-    fetchUsers();
-  }, [currentPage]);
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      fetchUsers();
+    }, 500);
 
-  // Client-side filtering
-  const filteredUsers = useMemo(() => {
-    return users.filter(user => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === "all" ||
-        (filterStatus === "active" && user.active) ||
-        (filterStatus === "inactive" && !user.active);
-      return matchesSearch && matchesStatus;
-    });
-  }, [users, searchTerm, filterStatus]);
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, searchTerm, filterStatus]); // Include searchTerm in dep array
 
-  const paginatedUsers = filteredUsers;
+  // Removed client-side filtering as we now use server-side search
+  const paginatedUsers = users;
 
   const toggleActive = async (id: number) => {
     try {
@@ -118,9 +118,18 @@ export default function UsersPage() {
   const handleSaveEdit = async () => {
     if (selectedUser && editFormData) {
       try {
-        await usersApi.update(selectedUser.id, editFormData);
+        // Map frontend 'active' to backend 'enabled'
+        const payload = {
+          ...editFormData,
+          enabled: editFormData.active
+        };
+
+        await usersApi.update(selectedUser.id, payload);
+
+        // Refresh list to verify changes
+        // simple re-fetch or manual update:
         setUsers(users.map(u =>
-          u.id === selectedUser.id ? { ...u, ...editFormData } : u
+          u.id === selectedUser.id ? { ...u, ...editFormData, active: editFormData.active! } : u
         ));
         setEditModalOpen(false);
         setSelectedUser(null);

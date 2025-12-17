@@ -40,6 +40,10 @@ public class User extends BaseAuditEntity {
     @Builder.Default
     private Role role = Role.USER;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean enabled = true;
+
     private String phone;
     private String address;
     private String ward;
