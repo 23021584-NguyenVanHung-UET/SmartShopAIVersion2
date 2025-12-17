@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, Eye, Package, ToggleLeft, ToggleRight, Filter, Image as ImageIcon, ChevronDown, XCircle } from "lucide-react";
+import { productsApi } from "@/lib/api";
 
 interface Product {
   id: number;
@@ -14,14 +15,11 @@ interface Product {
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([
-    { id: 1, name: "Áo thun Premium Cotton", price: 299000, category: "Áo", stock: 156, status: "active", createdAt: "2025-03-15" },
-    { id: 2, name: "Quần jeans Slim Fit", price: 799000, category: "Quần", stock: 0, status: "out_of_stock", createdAt: "2025-03-20" },
-    { id: 3, name: "Giày Sneaker Pro 2025", price: 1599000, category: "Giày", stock: 42, status: "active", createdAt: "2025-04-01" },
-    { id: 4, name: "Túi xách da thật", price: 2499000, category: "Phụ kiện", stock: 28, status: "active", createdAt: "2025-04-10" },
-    { id: 5, name: "Đồng hồ thông minh X9", price: 5499000, category: "Điện tử", stock: 3, status: "active", createdAt: "2025-05-05" },
-    { id: 6, name: "Mũ lưỡi trai cao cấp", price: 199000, category: "Phụ kiện", stock: 89, status: "inactive", createdAt: "2025-05-12" },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -36,7 +34,41 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
 
-  // Dữ liệu lọc
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await productsApi.getAll(currentPage - 1, itemsPerPage) as any;
+
+        // Map backend response to frontend format
+        const mappedProducts = response.content.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          category: p.category?.name || "Uncategorized",
+          stock: p.stock,
+          status: p.stock === 0 ? "out_of_stock" : p.status?.toLowerCase() || "active",
+          image: p.imageUrl,
+          createdAt: p.createdAt,
+        }));
+
+        setProducts(mappedProducts);
+        setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
+      } catch (err: any) {
+        console.error('Error fetching products:', err);
+        setError('Failed to load products. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [currentPage]);
+
+  // Client-side filtering (for search and filters)
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -46,25 +78,37 @@ export default function ProductsPage() {
     });
   }, [products, searchTerm, filterCategory, filterStatus]);
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedProducts = filteredProducts;
 
   const categories = ["all", "Áo", "Quần", "Giày", "Phụ kiện", "Điện tử"];
 
-  const toggleStatus = (id: number) => {
-    setProducts(products.map(p =>
-      p.id === id
-        ? { ...p, status: p.status === "active" ? "inactive" : "active" }
-        : p
-    ));
+  const toggleStatus = async (id: number) => {
+    try {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      const newStatus = product.status === "active" ? "inactive" : "active";
+      await productsApi.update(id, { ...product, status: newStatus });
+
+      // Optimistically update UI
+      setProducts(products.map(p =>
+        p.id === id ? { ...p, status: newStatus } : p
+      ));
+    } catch (err) {
+      console.error('Error toggling product status:', err);
+      alert('Failed to update product status');
+    }
   };
 
-  const deleteProduct = (id: number) => {
+  const deleteProduct = async (id: number) => {
     if (confirm("Xóa sản phẩm này? Hành động không thể hoàn tác!")) {
-      setProducts(products.filter(p => p.id !== id));
+      try {
+        await productsApi.delete(id);
+        setProducts(products.filter(p => p.id !== id));
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product');
+      }
     }
   };
 
@@ -79,16 +123,49 @@ export default function ProductsPage() {
     setEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (selectedProduct && editFormData) {
-      setProducts(products.map(p =>
-        p.id === selectedProduct.id ? { ...p, ...editFormData } : p
-      ));
-      setEditModalOpen(false);
-      setSelectedProduct(null);
-      setEditFormData({});
+      try {
+        await productsApi.update(selectedProduct.id, editFormData);
+        setProducts(products.map(p =>
+          p.id === selectedProduct.id ? { ...p, ...editFormData } : p
+        ));
+        setEditModalOpen(false);
+        setSelectedProduct(null);
+        setEditFormData({});
+      } catch (err) {
+        console.error('Error updating product:', err);
+        alert('Failed to update product');
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Đang tải sản phẩm...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-10">
@@ -99,7 +176,7 @@ export default function ProductsPage() {
             Quản lý sản phẩm
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Tổng <span className="font-bold text-blue-600">{products.length}</span> sản phẩm •{" "}
+            Tổng <span className="font-bold text-blue-600">{totalElements}</span> sản phẩm •{" "}
             <span className="text-emerald-600 font-medium">{products.filter(p => p.status === "active").length} đang bán</span>
           </p>
         </div>
@@ -193,10 +270,10 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${product.status === "active"
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                        : product.status === "inactive"
-                          ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      : product.status === "inactive"
+                        ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                       }`}>
                       {product.status === "active" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       {product.status === "active" ? "Đang bán" : product.status === "inactive" ? "Tạm ẩn" : "Hết hàng"}
@@ -224,8 +301,8 @@ export default function ProductsPage() {
                           console.log(`Toggled status for product ${product.id}`);
                         }}
                         className={`p-2 rounded-lg transition ${product.status === "active"
-                            ? "hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600"
-                            : "hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600"
+                          ? "hover:bg-orange-50 dark:hover:bg-orange-900/30 text-orange-600"
+                          : "hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600"
                           }`}
                         title={product.status === "active" ? "Ẩn sản phẩm" : "Hiển thị sản phẩm"}
                       >
@@ -310,10 +387,10 @@ export default function ProductsPage() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Trạng thái</p>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedProduct.status === "active"
-                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      : selectedProduct.status === "inactive"
-                        ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    : selectedProduct.status === "inactive"
+                      ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                     }`}>
                     {selectedProduct.status === "active" ? "Đang bán" : selectedProduct.status === "inactive" ? "Tạm ẩn" : "Hết hàng"}
                   </span>

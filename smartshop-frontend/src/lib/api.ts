@@ -141,3 +141,11 @@ export const ordersApi = {
         return response.data;
     },
 };
+
+// Categories API
+export const categoriesApi = {
+    getAll: async () => {
+        const response = await axios.get('/public/categories');
+        return response.data;
+    },
+};
