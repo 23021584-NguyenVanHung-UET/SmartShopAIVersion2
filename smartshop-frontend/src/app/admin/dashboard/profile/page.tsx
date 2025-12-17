@@ -1,14 +1,15 @@
 // app/dashboard/profile/page.tsx
 "use client";
-import { useState, useRef } from "react";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Camera, 
-  Edit, 
-  Save, 
+import { useState, useRef, useEffect } from "react";
+import { getCurrentUser } from "@/features/auth/services/authService";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Camera,
+  Edit,
+  Save,
   Trash2,
   Calendar,
   Shield,
@@ -34,19 +35,39 @@ export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [user, setUser] = useState({
-    name: "Nguyễn Văn An",
-    email: "an.nguyen@example.com",
-    phone: "+84 987 654 321",
-    address: "123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh",
-    birthDate: "1990-05-15",
-    role: "ADMIN" as const,
-    bio: "Chuyên gia quản lý bán hàng với 10+ năm kinh nghiệm. Đam mê công nghệ và automation.",
-    company: "TechCorp Vietnam",
-    position: "Head of Sales & Marketing",
-    joinDate: "2018-03-01"
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    birthDate: "",
+    role: "USER",
+    bio: "",
+    company: "",
+    position: "",
+    joinDate: ""
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const userData = await getCurrentUser();
+        setUser(prev => ({
+          ...prev,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          phone: userData.phone || "",
+          address: userData.address || "",
+          // Map other fields if/when they become available in backend
+        }));
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const [security, setSecurity] = useState({
     twoFactor: true,
@@ -110,7 +131,7 @@ export default function ProfilePage() {
             Quản lý thông tin tài khoản và cài đặt của bạn
           </p>
         </motion.div>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => setDarkMode(!darkMode)}
@@ -120,11 +141,10 @@ export default function ProfilePage() {
           </button>
           <button
             onClick={() => setEditing(!editing)}
-            className={`px-5 py-3 rounded-xl font-medium transition-all ${
-              editing 
-                ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/25"
-            }`}
+            className={`px-5 py-3 rounded-xl font-medium transition-all ${editing
+              ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/25"
+              }`}
           >
             <div className="flex items-center gap-2">
               <Edit size={18} />
@@ -156,14 +176,14 @@ export default function ProfilePage() {
             <div className="relative p-8 text-center">
               {/* Avatar Section */}
               <div className="relative inline-block group">
-                <div 
+                <div
                   className="w-40 h-40 rounded-2xl overflow-hidden cursor-pointer mx-auto border-4 border-white dark:border-gray-800 shadow-2xl"
                   onClick={editing ? triggerFileInput : undefined}
                 >
                   {avatar ? (
-                    <img 
-                      src={avatar} 
-                      alt="Avatar" 
+                    <img
+                      src={avatar}
+                      alt="Avatar"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -172,7 +192,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                
+
                 {editing && (
                   <>
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center">
@@ -206,9 +226,9 @@ export default function ProfilePage() {
                     {user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
                   </span>
                 </div>
-                
+
                 <p className="text-gray-600 dark:text-gray-400 mt-4 mb-2">{user.bio}</p>
-                
+
                 <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
                   Tham gia từ {new Date(user.joinDate).toLocaleDateString('vi-VN')}
@@ -227,7 +247,7 @@ export default function ProfilePage() {
                   <p className="font-medium text-gray-800 dark:text-white">{user.email}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
                   <Phone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -237,7 +257,7 @@ export default function ProfilePage() {
                   <p className="font-medium text-gray-800 dark:text-white">{user.phone}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
                   <MapPin className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -280,7 +300,7 @@ export default function ProfilePage() {
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Thông tin cá nhân</h3>
               <p className="text-gray-600 dark:text-gray-400">Cập nhật thông tin cá nhân của bạn</p>
             </div>
-            
+
             <div className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
@@ -293,14 +313,13 @@ export default function ProfilePage() {
                       value={user.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       disabled={!editing}
-                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${
-                        editing 
-                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                      }`}
+                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${editing
+                        ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                        : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                        }`}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Email
@@ -310,14 +329,13 @@ export default function ProfilePage() {
                       value={user.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       disabled={!editing}
-                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${
-                        editing 
-                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                      }`}
+                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${editing
+                        ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                        : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                        }`}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Công ty
@@ -327,15 +345,14 @@ export default function ProfilePage() {
                       value={user.company}
                       onChange={(e) => handleInputChange('company', e.target.value)}
                       disabled={!editing}
-                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${
-                        editing 
-                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                      }`}
+                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${editing
+                        ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                        : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                        }`}
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -346,14 +363,13 @@ export default function ProfilePage() {
                       value={user.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       disabled={!editing}
-                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${
-                        editing 
-                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                      }`}
+                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${editing
+                        ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                        : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                        }`}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Ngày sinh
@@ -365,15 +381,14 @@ export default function ProfilePage() {
                         value={user.birthDate}
                         onChange={(e) => handleInputChange('birthDate', e.target.value)}
                         disabled={!editing}
-                        className={`w-full pl-12 pr-4 py-4 rounded-xl border-2 transition-all ${
-                          editing 
-                            ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                            : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                        }`}
+                        className={`w-full pl-12 pr-4 py-4 rounded-xl border-2 transition-all ${editing
+                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                          }`}
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Chức vụ
@@ -383,16 +398,15 @@ export default function ProfilePage() {
                       value={user.position}
                       onChange={(e) => handleInputChange('position', e.target.value)}
                       disabled={!editing}
-                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${
-                        editing 
-                          ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                      }`}
+                      className={`w-full px-4 py-4 rounded-xl border-2 transition-all ${editing
+                        ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                        : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                        }`}
                     />
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-8">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   Địa chỉ
@@ -402,14 +416,13 @@ export default function ProfilePage() {
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   disabled={!editing}
                   rows={3}
-                  className={`w-full px-4 py-4 rounded-xl border-2 transition-all resize-none ${
-                    editing 
-                      ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                      : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                  }`}
+                  className={`w-full px-4 py-4 rounded-xl border-2 transition-all resize-none ${editing
+                    ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                    : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                    }`}
                 />
               </div>
-              
+
               <div className="mt-8">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   Giới thiệu bản thân
@@ -419,11 +432,10 @@ export default function ProfilePage() {
                   onChange={(e) => handleInputChange('bio', e.target.value)}
                   disabled={!editing}
                   rows={4}
-                  className={`w-full px-4 py-4 rounded-xl border-2 transition-all resize-none ${
-                    editing 
-                      ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
-                      : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                  }`}
+                  className={`w-full px-4 py-4 rounded-xl border-2 transition-all resize-none ${editing
+                    ? "border-blue-200 dark:border-blue-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white dark:bg-gray-800"
+                    : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
+                    }`}
                   placeholder="Giới thiệu ngắn gọn về bản thân..."
                 />
               </div>
@@ -439,7 +451,7 @@ export default function ProfilePage() {
               </div>
               <div className="p-6 space-y-4">
                 {activities.map((activity, i) => (
-                  <div 
+                  <div
                     key={i}
                     className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
                   >
@@ -560,7 +572,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <button className="flex-1 px-6 py-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-3">
                   <Trash2 className="w-5 h-5" />

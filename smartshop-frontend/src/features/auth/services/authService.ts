@@ -48,7 +48,25 @@ export const resetPassword = async (payload: ResetPasswordPayload): Promise<{ me
     return res.data;
 };
 
-export const getCurrentUser = async (): Promise<{ name: string; email: string; role: string }> => {
-    const res = await axios.get<{ name: string; email: string; role: string }>("/auth/me");
+export const getCurrentUser = async (): Promise<{
+    name: string;
+    email: string;
+    role: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+}> => {
+    const res = await axios.get<{
+        name: string;
+        email: string;
+        role: string;
+        phone?: string;
+        address?: string;
+        city?: string;
+        district?: string;
+        ward?: string;
+    }>("/auth/me");
     return res.data;
 };

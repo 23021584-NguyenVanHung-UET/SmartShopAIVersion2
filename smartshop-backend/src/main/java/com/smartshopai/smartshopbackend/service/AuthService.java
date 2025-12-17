@@ -29,7 +29,8 @@ public class AuthService {
     private final PasswordResetTokenRepository tokenRepository;
     private static final Duration RESET_TOKEN_TTL = Duration.ofMinutes(30);
 
-    public AuthService(UserRepository userRepository, JwtService jwtService, PasswordResetTokenRepository tokenRepository) {
+    public AuthService(UserRepository userRepository, JwtService jwtService,
+            PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.tokenRepository = tokenRepository;
@@ -78,7 +79,15 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
-        return new UserProfileResponse(user.getName(), user.getEmail(), user.getRole());
+        return new UserProfileResponse(
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                user.getPhone(),
+                user.getAddress(),
+                user.getCity(),
+                user.getDistrict(),
+                user.getWard());
     }
 
     @Transactional
