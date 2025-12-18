@@ -2,14 +2,14 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Settings, 
-  Bell, 
-  Lock, 
-  Globe, 
-  Database, 
-  Mail, 
-  Save, 
+import {
+  Settings,
+  Bell,
+  Lock,
+  Globe,
+  Database,
+  Mail,
+  Save,
   RefreshCw,
   Shield,
   Zap,
@@ -26,7 +26,7 @@ import { motion } from "framer-motion";
 export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKey, setApiKey] = useState("sk_live_************");
-  
+
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -262,37 +262,6 @@ export default function SettingsPage() {
                 <span>120 phút</span>
               </div>
             </div>
-
-            <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                API Key
-              </label>
-              <div className="relative">
-                <input
-                  type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                  readOnly
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl pr-24"
-                />
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-2">
-                  <button
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                  >
-                    {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                  <button
-                    onClick={generateApiKey}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Tạo mới
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Sử dụng API Key để tích hợp với các dịch vụ bên ngoài
-              </p>
-            </div>
           </div>
         </motion.div>
 
@@ -369,6 +338,21 @@ export default function SettingsPage() {
                 <option value="EUR">🇪🇺 EUR (€)</option>
                 <option value="JPY">🇯🇵 JPY (¥)</option>
               </select>
+            </div>
+
+            {/* Development Notice */}
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">
+                    Đang phát triển
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
+                    Các tùy chọn này hiện chỉ mang tính chất hiển thị. Chức năng lưu trữ và áp dụng sẽ được bổ sung trong phiên bản tới.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
