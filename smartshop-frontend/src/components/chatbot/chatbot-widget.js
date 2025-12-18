@@ -1,137 +1,162 @@
-// src/components/chatbot/chatbot-widget.js
+// Chatbot Widget - Clean Version
 export class ChatbotWidget {
-  constructor({ 
-    apiUrl = "https://chatbot-soa.onrender.com/chat", 
-    title = "Trợ lý ảo",
-    position = "bottom-right"
-  } = {}) {
-    this.apiUrl = apiUrl;
-    this.title = title;
-    this.position = position;
-    this.messages = [];
-    this.isOpen = true;
-    this.isMinimized = false;
-    this.createWidget();
+  constructor(config = {}) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    this.config = {
+      apiUrl: 'https://chatbot-soa.onrender.com/chat',
+      title: 'Trợ lý mua sắm',
+      botAvatar: '🤖',
+      userAvatar: '👤',
+      ...config
+    };
+
+    this.minimized = true;
+    this.userId = this.getOrCreateUserId();
+    
+    this.root = null;
+    this.messagesEl = null;
+    this.inputEl = null;
+    this.sendBtn = null;
+    this.toggleBtn = null;
+    this.typingEl = null;
+    
+    this.init();
   }
 
-  createWidget() {
-    // Tạo container chính
-    this.container = document.createElement("div");
-    this.container.id = "chatbot-widget";
-    this.container.className = "chatbot-container";
-    document.body.appendChild(this.container);
+  // Lấy hoặc tạo user ID
+  getOrCreateUserId() {
+    const KEY = 'chatbot_user_id';
+    
+    try {
+      let uid = localStorage.getItem(KEY);
+      
+      if (uid && typeof uid === 'string' && uid.length > 0) {
+        return uid;
+      }
+      
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        uid = 'user_' + crypto.randomUUID();
+      } else {
+        uid = 'user_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+      }
+      
+      localStorage.setItem(KEY, uid);
+      return uid;
+      
+    } catch (error) {
+      return 'guest_' + Date.now();
+    }
+  }
 
-    // Thêm CSS
-    const style = document.createElement("style");
-    style.textContent = `
-      .chatbot-container {
+  // Khởi tạo widget
+  init() {
+    if (document.querySelector('.chatbot-widget')) {
+      return;
+    }
+
+    this.injectStyles();
+    this.createDOM();
+    this.bindEvents();
+    
+    setTimeout(() => {
+      this.addMessage('Xin chào 👋 Tôi có thể giúp bạn tìm và tư vấn sản phẩm.', 'bot');
+    }, 500);
+  }
+
+  // Thêm CSS
+  injectStyles() {
+    if (document.getElementById('chatbot-widget-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'chatbot-widget-styles';
+    style.textContent = this.getStyles();
+    document.head.appendChild(style);
+  }
+
+  getStyles() {
+    return `
+      .chatbot-widget {
         position: fixed;
-        ${this.position === 'bottom-right' ? 'bottom: 20px; right: 20px;' : 
-          this.position === 'bottom-left' ? 'bottom: 20px; left: 20px;' :
-          this.position === 'top-right' ? 'top: 20px; right: 20px;' : 'top: 20px; left: 20px;'}
+        bottom: 20px;
+        right: 20px;
         width: 380px;
         height: 500px;
         background: white;
-        border: 1px solid #333;
-        border-radius: 10px;
-        font-family: system-ui, -apple-system, sans-serif;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
         z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        overflow: hidden;
         transition: all 0.3s ease;
-        overflow: hidden;
       }
       
-      .chatbot-container.minimized {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        overflow: hidden;
-        cursor: pointer;
-        justify-content: center;
-        align-items: center;
-      }
-      
-      .chatbot-container.minimized .chatbot-header {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 0;
-        border-radius: 50%;
-        background: #000;
-        color: white;
-        font-size: 24px;
-      }
-      
-      .chatbot-container.minimized .chatbot-header span {
-        font-size: 24px;
-      }
-      
-      .chatbot-container.minimized .chatbot-actions {
-        display: none;
-      }
-      
-      .chatbot-container.minimized .chatbot-messages,
-      .chatbot-container.minimized .typing-indicator,
-      .chatbot-container.minimized .chatbot-input-area {
-        display: none !important;
+      .chatbot-widget.minimized {
+        height: 60px !important;
+        width: 300px !important;
       }
       
       .chatbot-header {
-        background: #000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 16px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #333;
-        font-weight: 600;
-        font-size: 16px;
-      }
-      
-      .chatbot-actions {
-        display: flex;
-        gap: 8px;
-      }
-      
-      .chatbot-actions button {
-        background: transparent;
-        color: white;
-        border: 1px solid #666;
-        border-radius: 4px;
-        width: 28px;
-        height: 28px;
         cursor: pointer;
-        font-size: 14px;
+      }
+      
+      .chatbot-title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      
+      .chatbot-toggle {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s;
+        transition: background 0.2s;
       }
       
-      .chatbot-actions button:hover {
-        background: #333;
+      .chatbot-toggle:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      .chatbot-body {
+        height: calc(100% - 64px);
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+      }
+      
+      .chatbot-widget.minimized .chatbot-body {
+        display: none;
       }
       
       .chatbot-messages {
         flex: 1;
-        padding: 20px;
         overflow-y: auto;
-        background: #fafafa;
+        padding: 20px;
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
       
-      .message {
-        max-width: 85%;
-        padding: 12px 16px;
-        border-radius: 18px;
-        line-height: 1.5;
-        word-wrap: break-word;
+      .chatbot-message {
+        display: flex;
+        gap: 10px;
+        max-width: 90%;
         animation: fadeIn 0.3s ease;
       }
       
@@ -140,386 +165,391 @@ export class ChatbotWidget {
         to { opacity: 1; transform: translateY(0); }
       }
       
-      .message.user {
+      .chatbot-message.user {
         align-self: flex-end;
-        background: #000;
+        flex-direction: row-reverse;
+      }
+      
+      .chatbot-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      
+      .chatbot-message.user .chatbot-avatar {
+        background: #007bff;
+        color: white;
+      }
+      
+      .chatbot-bubble {
+        background: white;
+        padding: 12px 16px;
+        border-radius: 18px;
+        font-size: 14px;
+        line-height: 1.5;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        max-width: 100%;
+        word-wrap: break-word;
+      }
+      
+      .chatbot-message.user .chatbot-bubble {
+        background: #007bff;
         color: white;
         border-bottom-right-radius: 4px;
       }
       
-      .message.bot {
-        align-self: flex-start;
-        background: white;
-        color: #000;
-        border: 1px solid #ddd;
+      .chatbot-message.bot .chatbot-bubble {
         border-bottom-left-radius: 4px;
       }
       
-      .chatbot-input-area {
-        padding: 16px 20px;
-        border-top: 1px solid #ddd;
-        background: white;
-        display: flex;
-        gap: 12px;
-        align-items: center;
+      .chatbot-bubble strong {
+        font-weight: 600;
+      }
+      
+      .chatbot-bubble em {
+        font-style: italic;
+      }
+      
+      .chatbot-bubble code {
+        background: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+      }
+      
+      .chatbot-bubble pre {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 8px;
+        overflow-x: auto;
+        margin: 8px 0;
+      }
+      
+      .chatbot-bubble a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      
+      .chatbot-bubble a:hover {
+        text-decoration: underline;
+      }
+      
+      .chatbot-typing {
+        padding: 10px 20px;
+        font-size: 14px;
+        color: #6c757d;
+        font-style: italic;
+        background: rgba(255, 255, 255, 0.8);
+        border-top: 1px solid #e9ecef;
+        display: none;
       }
       
       .chatbot-input {
+        padding: 15px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        gap: 10px;
+      }
+      
+      .chatbot-input input {
         flex: 1;
-        padding: 12px 16px;
-        border: 1px solid #ccc;
-        border-radius: 20px;
+        padding: 10px 14px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
         font-size: 14px;
         outline: none;
-        background: white;
-        color: #000;
-        transition: border 0.2s;
       }
       
-      .chatbot-input:focus {
-        border-color: #000;
+      .chatbot-input input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
       }
       
-      .chatbot-send {
-        background: #000;
+      .chatbot-input button {
+        padding: 10px 20px;
+        background: #007bff;
         color: white;
         border: none;
-        border-radius: 20px;
-        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
+        transition: background 0.2s;
       }
       
-      .chatbot-send:hover:not(:disabled) {
-        background: #333;
-        transform: scale(1.05);
+      .chatbot-input button:hover {
+        background: #0056b3;
       }
       
-      .chatbot-send:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      
-      .typing-indicator {
-        display: flex;
-        gap: 4px;
-        padding: 0 20px 12px;
-        align-items: center;
-      }
-      
-      .typing-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #999;
-        animation: typing 1.4s infinite;
-      }
-      
-      .typing-dot:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-      
-      .typing-dot:nth-child(3) {
-        animation-delay: 0.4s;
-      }
-      
-      @keyframes typing {
-        0%, 60%, 100% {
-          transform: translateY(0);
-        }
-        30% {
-          transform: translateY(-4px);
-        }
-      }
-      
-      /* Scrollbar */
       .chatbot-messages::-webkit-scrollbar {
         width: 6px;
       }
       
       .chatbot-messages::-webkit-scrollbar-track {
         background: #f1f1f1;
+        border-radius: 3px;
       }
       
       .chatbot-messages::-webkit-scrollbar-thumb {
-        background: #888;
+        background: #c1c1c1;
         border-radius: 3px;
       }
       
       .chatbot-messages::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: #a8a8a8;
       }
       
-      /* Responsive */
       @media (max-width: 480px) {
-        .chatbot-container {
-          width: calc(100vw - 40px);
-          max-width: 380px;
-          bottom: 10px !important;
-          left: 10px !important;
-          right: 10px !important;
-          top: auto !important;
+        .chatbot-widget {
+          bottom: 10px;
+          right: 10px;
+          left: 10px;
+          width: auto !important;
+          max-width: calc(100vw - 20px);
+          height: 60vh;
         }
         
-        .chatbot-container.minimized {
-          width: 50px;
-          height: 50px;
-          bottom: 10px !important;
-          right: 10px !important;
+        .chatbot-widget.minimized {
+          width: 250px !important;
+          left: auto;
+          right: 10px;
         }
       }
     `;
-    document.head.appendChild(style);
+  }
 
-    // Tạo nội dung widget - CHỈ CÒN NÚT MINIMIZE
-    this.container.innerHTML = `
+  // Tạo DOM
+  createDOM() {
+    this.root = document.createElement('div');
+    this.root.className = 'chatbot-widget minimized';
+    
+    this.root.innerHTML = `
       <div class="chatbot-header">
-        <span>${this.title}</span>
-        <div class="chatbot-actions">
-          <button class="chatbot-minimize" title="Thu nhỏ">−</button>
+        <div class="chatbot-title">${this.config.title}</div>
+        <button class="chatbot-toggle">+</button>
+      </div>
+      
+      <div class="chatbot-body">
+        <div class="chatbot-messages"></div>
+        <div class="chatbot-typing">Đang trả lời...</div>
+        <div class="chatbot-input">
+          <input type="text" placeholder="Nhập câu hỏi của bạn...">
+          <button type="button">Gửi</button>
         </div>
-      </div>
-      
-      <div class="chatbot-messages"></div>
-      
-      <div class="typing-indicator" style="display: none;">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <span style="margin-left: 8px; font-size: 13px; color: #666;">Đang trả lời...</span>
-      </div>
-      
-      <div class="chatbot-input-area">
-        <input 
-          type="text" 
-          class="chatbot-input" 
-          placeholder="Nhập câu hỏi của bạn..."
-          autocomplete="off"
-          spellcheck="true"
-        />
-        <button class="chatbot-send">Gửi</button>
       </div>
     `;
-
-    // Lấy các phần tử DOM
-    this.messagesEl = this.container.querySelector(".chatbot-messages");
-    this.inputEl = this.container.querySelector(".chatbot-input");
-    this.sendBtn = this.container.querySelector(".chatbot-send");
-    this.typingEl = this.container.querySelector(".typing-indicator");
-    this.minimizeBtn = this.container.querySelector(".chatbot-minimize");
-    this.header = this.container.querySelector(".chatbot-header");
-
-    // Gắn sự kiện
-    this.bindEvents();
     
-    // Thêm tin nhắn chào mừng
-    this.addMessage("Xin chào! Tôi có thể giúp gì cho bạn?", "bot");
+    document.body.appendChild(this.root);
     
-    // Focus vào input
-    setTimeout(() => this.inputEl.focus(), 100);
+    this.messagesEl = this.root.querySelector('.chatbot-messages');
+    this.inputEl = this.root.querySelector('input');
+    this.sendBtn = this.root.querySelector('.chatbot-input button');
+    this.toggleBtn = this.root.querySelector('.chatbot-toggle');
+    this.typingEl = this.root.querySelector('.chatbot-typing');
+    
+    this.root.style.display = 'block';
+    this.root.style.visibility = 'visible';
   }
 
+  // Gắn sự kiện
   bindEvents() {
-    // Gửi tin nhắn
-    this.sendBtn.addEventListener("click", () => this.sendMessage());
+    this.sendBtn.addEventListener('click', () => this.sendMessage());
     
-    // Nhấn Enter để gửi
-    this.inputEl.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") this.sendMessage();
-    });
-    
-    // Toggle thu nhỏ/phóng to
-    this.minimizeBtn.addEventListener("click", (e) => {
-      e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
-      this.toggleMinimize();
-    });
-    
-    // Click vào header khi thu nhỏ để mở lại
-    this.header.addEventListener("click", (e) => {
-      if (this.isMinimized) {
-        this.toggleMinimize();
+    this.inputEl.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        this.sendMessage();
       }
     });
     
-    // Xử lý lỗi input
-    this.inputEl.addEventListener("input", () => {
-      if (this.inputEl.value.trim().length > 0) {
-        this.sendBtn.disabled = false;
-      } else {
-        this.sendBtn.disabled = true;
+    this.toggleBtn.addEventListener('click', () => {
+      this.toggleWidget();
+    });
+    
+    this.root.addEventListener('click', () => {
+      if (!this.minimized) {
+        this.inputEl.focus();
       }
     });
   }
 
-  toggleMinimize() {
-    this.isMinimized = !this.isMinimized;
-    this.container.classList.toggle("minimized");
+  // Mở/đóng widget
+  toggleWidget() {
+    this.minimized = !this.minimized;
     
-    if (this.isMinimized) {
-      // Khi thu nhỏ: hiển thị icon chat
-      this.header.innerHTML = `
-        <span>💬</span>
-      `;
-      this.header.title = "Nhấn để mở chatbot";
+    if (this.minimized) {
+      this.root.classList.add('minimized');
+      this.toggleBtn.textContent = '+';
     } else {
-      // Khi mở rộng: hiển thị đầy đủ
-      this.header.innerHTML = `
-        <span>${this.title}</span>
-        <div class="chatbot-actions">
-          <button class="chatbot-minimize" title="Thu nhỏ">−</button>
-        </div>
-      `;
-      this.header.title = "";
-      
-      // Cập nhật lại event listener cho nút minimize mới
-      const newMinimizeBtn = this.container.querySelector(".chatbot-minimize");
-      newMinimizeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.toggleMinimize();
-      });
-      
-      // Focus vào input
-      setTimeout(() => this.inputEl.focus(), 100);
+      this.root.classList.remove('minimized');
+      this.toggleBtn.textContent = '−';
+      this.inputEl.focus();
+      this.scrollToBottom();
     }
   }
 
-  addMessage(text, sender = "user") {
-    const messageDiv = document.createElement("div");
-    messageDiv.className = `message ${sender}`;
+  // Thêm tin nhắn
+  addMessage(text, sender = 'bot') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chatbot-message ${sender}`;
     
-    // Xử lý text - chỉ hiển thị phần response (loại bỏ <think> tags nếu có)
-    let displayText = text;
+    const avatar = sender === 'bot' ? this.config.botAvatar : this.config.userAvatar;
+    const formattedText = this.formatText(text);
     
-    // Loại bỏ phần think nếu có
-    if (text.includes('<think>')) {
-      const match = text.match(/<think>[\s\S]*?<\/think>\s*\n*(.*)/s);
-      if (match && match[1]) {
-        displayText = match[1].trim();
-      }
-    }
+    messageDiv.innerHTML = `
+      <div class="chatbot-avatar">${avatar}</div>
+      <div class="chatbot-bubble">${formattedText}</div>
+    `;
     
-    messageDiv.textContent = displayText;
     this.messagesEl.appendChild(messageDiv);
-    this.messages.push({ text: displayText, sender, timestamp: new Date() });
+    this.scrollToBottom();
+  }
+
+  // Format văn bản - Loại bỏ các ký tự markdown
+  formatText(text) {
+    if (!text) return '';
     
-    // Tự động cuộn xuống cuối
-    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+    // Xóa các phần <think> (nếu có)
+    text = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    
+    // Xóa các ký tự markdown thừa
+    text = text
+      // Xóa các tiêu đề markdown (###, ##, #)
+      .replace(/^#{1,6}\s*/gm, '')
+      // Xóa các dòng phân cách (---, ===)
+      .replace(/^[-=]{3,}\s*$/gm, '')
+      // Xóa các dấu * dùng cho bullet points
+      .replace(/^\s*[\*\-\+]\s+/gm, '')
+      // Xóa các số dùng cho numbered list
+      .replace(/^\s*\d+\.\s+/gm, '')
+      // Xóa blockquote (>)
+      .replace(/^\s*>\s*/gm, '')
+      // Xóa các dấu phân cách ở giữa dòng
+      .replace(/---/g, '')
+      .replace(/===/g, '')
+      // Xóa các khoảng trắng thừa
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
+    
+    // Format các phần tử còn lại
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      .replace(/\n/g, '<br>')
+      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
   }
 
-  showTyping() {
-    this.typingEl.style.display = "flex";
-    this.sendBtn.disabled = true;
-    this.sendBtn.textContent = "Đang gửi...";
-    this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+  // Scroll xuống dưới
+  scrollToBottom() {
+    requestAnimationFrame(() => {
+      if (this.messagesEl) {
+        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+      }
+    });
   }
 
-  hideTyping() {
-    this.typingEl.style.display = "none";
-    this.sendBtn.disabled = false;
-    this.sendBtn.textContent = "Gửi";
+  // Hiển thị typing indicator
+  showTyping(show) {
+    if (!this.typingEl) return;
+    
+    if (show) {
+      this.typingEl.style.display = 'block';
+    } else {
+      this.typingEl.style.display = 'none';
+    }
+    
+    this.scrollToBottom();
   }
 
+  // Gửi tin nhắn đến API
   async sendMessage() {
-    const text = this.inputEl.value.trim();
-    if (!text) return;
+    const message = this.inputEl.value.trim();
     
-    // Thêm tin nhắn của người dùng
-    this.addMessage(text, "user");
+    if (!message) {
+      this.inputEl.focus();
+      return;
+    }
     
-    // Xóa input
-    this.inputEl.value = "";
-    this.sendBtn.disabled = true;
-    
-    // Hiển thị typing indicator
-    this.showTyping();
+    this.inputEl.value = '';
+    this.addMessage(message, 'user');
+    this.showTyping(true);
     
     try {
-      console.log("📤 Gửi tin nhắn đến API:", text);
-      
-      // Gọi API với timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      
-      const response = await fetch(this.apiUrl, {
-        method: "POST",
+      const response = await fetch(this.config.apiUrl, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ 
-          message: text,
-          user_id: "user_" + Date.now(),
-          timestamp: new Date().toISOString()
-        }),
-        signal: controller.signal
+        body: JSON.stringify({
+          user_id: this.userId,
+          message: message
+        })
       });
       
-      clearTimeout(timeoutId);
-      
-      console.log("📥 Nhận response từ API:", response.status);
-      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`API error: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log("📦 Dữ liệu API:", data);
       
-      // CHỈ LẤY TRƯỜNG RESPONSE - KHÔNG HIỂN THỊ PRODUCTS
-      if (data.response) {
-        this.addMessage(data.response, "bot");
-      } else if (data.reply) {
-        this.addMessage(data.reply, "bot");
+      if (data.success) {
+        this.addMessage(data.response, 'bot');
       } else {
-        this.addMessage("Xin lỗi, tôi không hiểu câu hỏi đó.", "bot");
+        this.addMessage('Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.', 'bot');
       }
       
     } catch (error) {
-      console.error("❌ Lỗi khi gọi API:", error);
-      
-      let errorMessage = "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.";
-      
-      if (error.name === 'AbortError') {
-        errorMessage = "Yêu cầu quá thời gian. Vui lòng thử lại.";
-      } else if (error.message.includes('Network')) {
-        errorMessage = "Lỗi kết nối mạng. Vui lòng kiểm tra kết nối.";
-      }
-      
-      this.addMessage(errorMessage, "bot");
-      
+      console.error('Chatbot API error:', error);
+      this.addMessage('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.', 'bot');
     } finally {
-      this.hideTyping();
+      this.showTyping(false);
       this.inputEl.focus();
     }
   }
 
-  // Public methods
+  // Mở widget
   open() {
-    if (this.isMinimized) {
-      this.toggleMinimize();
-    }
-    this.container.style.display = "flex";
-    this.isOpen = true;
-    setTimeout(() => this.inputEl.focus(), 100);
+    this.minimized = false;
+    this.root.classList.remove('minimized');
+    this.toggleBtn.textContent = '−';
+    this.inputEl.focus();
+    this.scrollToBottom();
   }
-
+  
+  // Đóng widget
   close() {
-    this.container.style.display = "none";
-    this.isOpen = false;
+    this.minimized = true;
+    this.root.classList.add('minimized');
+    this.toggleBtn.textContent = '+';
   }
-
-  toggle() {
-    if (this.isOpen) {
-      this.close();
-    } else {
-      this.open();
-    }
-  }
-
+  
+  // Xóa widget
   destroy() {
-    if (this.container && this.container.parentNode) {
-      this.container.parentNode.removeChild(this.container);
+    if (this.root && this.root.parentNode) {
+      this.root.parentNode.removeChild(this.root);
+    }
+    
+    const styles = document.getElementById('chatbot-widget-styles');
+    if (styles) {
+      styles.parentNode.removeChild(styles);
     }
   }
+}
+
+// Tự động khởi tạo khi trang tải xong
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.ChatbotWidgetInstance = new ChatbotWidget();
+  });
 }
