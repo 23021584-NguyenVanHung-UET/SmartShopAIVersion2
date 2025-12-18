@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Menu, X, Home, User, Package, Receipt, Users, Brain,
+  Menu, X, Home, User, Package, Receipt, Users,
   LogOut, Moon, Sun, ShoppingBag, Settings, ChevronDown
 } from "lucide-react";
 import { ToastProvider } from "@/components/common/Toast";
@@ -68,7 +68,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { href: `${basePath}/products`, icon: Package, label: "Sản phẩm", color: "text-emerald-600" },
     { href: `${basePath}/orders`, icon: Receipt, label: "Đơn hàng", color: "text-amber-600" },
     { href: `${basePath}/users`, icon: Users, label: "Người dùng", color: "text-purple-600" },
-    { href: `${basePath}/ai-logs`, icon: Brain, label: "Log AI", color: "text-cyan-600" },
     { href: `${basePath}/settings`, icon: Settings, label: "Cài đặt", color: "text-gray-600" },
   ];
 
@@ -358,7 +357,6 @@ function getPageTitle(pathname: string): string {
     "/admin/dashboard/products": "Quản lý sản phẩm",
     "/admin/dashboard/orders": "Quản lý đơn hàng",
     "/admin/dashboard/users": "Quản lý người dùng",
-    "/admin/dashboard/ai-logs": "Log AI",
     "/admin/dashboard/settings": "Cài đặt hệ thống",
   };
 
@@ -372,7 +370,6 @@ function getPageDescription(pathname: string): string {
     "/admin/dashboard/products": "Thêm, sửa, xóa sản phẩm",
     "/admin/dashboard/orders": "Theo dõi và xử lý đơn hàng",
     "/admin/dashboard/users": "Quản lý tài khoản người dùng",
-    "/admin/dashboard/ai-logs": "Lịch sử hoạt động AI",
     "/admin/dashboard/settings": "Cấu hình hệ thống",
   };
 
