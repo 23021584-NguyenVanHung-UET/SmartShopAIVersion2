@@ -124,6 +124,11 @@ export const ordersApi = {
         return response.data;
     },
 
+    update: async (id: number, order: any) => {
+        const response = await axios.put(`/admin/orders/${id}`, order);
+        return response.data;
+    },
+
     delete: async (id: number) => {
         await axios.delete(`/admin/orders/${id}`);
     },
@@ -138,6 +143,14 @@ export const ordersApi = {
 
     getStats: async () => {
         const response = await axios.get('/admin/orders/stats');
+        return response.data;
+    },
+};
+
+// Categories API
+export const categoriesApi = {
+    getAll: async () => {
+        const response = await axios.get('/public/categories');
         return response.data;
     },
 };

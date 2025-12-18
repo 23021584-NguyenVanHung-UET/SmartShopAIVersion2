@@ -12,12 +12,17 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 public class ProductService {
 
     private final ProductRepository repo;
 
-    public ProductService(ProductRepository repo) {
+    private final com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository;
+
+    public ProductService(ProductRepository repo,
+            com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository) {
         this.repo = repo;
+        this.categoryRepository = categoryRepository;
     }
 
     public List<Product> getAll() {
@@ -46,6 +51,57 @@ public class ProductService {
     }
 
     public Product save(Product product) {
+        return repo.save(product);
+    }
+
+    // New update method using DTO
+    public Product update(Long id, com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        Product product = getById(id);
+
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
+        product.setStatus(request.getStatus());
+
+        if (request.getCategory() != null) {
+            com.smartshopai.smartshopbackend.entity.Category category = categoryRepository
+                    .findByName(request.getCategory())
+                    .orElseGet(() -> {
+                        com.smartshopai.smartshopbackend.entity.Category newCat = new com.smartshopai.smartshopbackend.entity.Category();
+                        newCat.setName(request.getCategory());
+                        newCat.setSlug(request.getCategory().toLowerCase().replaceAll("[^a-z0-9]", "-"));
+                        return categoryRepository.save(newCat);
+                    });
+            product.setCategory(category);
+        }
+
+        return repo.save(product);
+    }
+
+    public Product create(com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setDescription(request.getDescription());
+        product.setImageUrl(request.getImageUrl());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : "active");
+
+        if (request.getCategory() != null) {
+            com.smartshopai.smartshopbackend.entity.Category category = categoryRepository
+                    .findByName(request.getCategory())
+                    .orElseGet(() -> {
+                        com.smartshopai.smartshopbackend.entity.Category newCat = new com.smartshopai.smartshopbackend.entity.Category();
+                        newCat.setName(request.getCategory());
+                        // Generate simplified slug
+                        newCat.setSlug(request.getCategory().toLowerCase().replaceAll("[^a-z0-9]", "-"));
+                        return categoryRepository.save(newCat);
+                    });
+            product.setCategory(category);
+        }
+
         return repo.save(product);
     }
 

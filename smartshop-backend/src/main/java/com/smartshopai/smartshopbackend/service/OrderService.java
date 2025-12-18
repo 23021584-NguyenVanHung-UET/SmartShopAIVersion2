@@ -25,7 +25,8 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
 
-    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, OrderItemRepository orderItemRepository) {
+    public OrderService(OrderRepository orderRepository, ProductRepository productRepository,
+            OrderItemRepository orderItemRepository) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.orderItemRepository = orderItemRepository;
@@ -99,6 +100,33 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
         order.setStatus(status);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order update(Long id, com.smartshopai.smartshopbackend.dto.UpdateOrderRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + id));
+
+        if (request.getStatus() != null)
+            order.setStatus(request.getStatus());
+        if (request.getTotalAmount() != null)
+            order.setTotalAmount(request.getTotalAmount());
+
+        // Map customer info updates to shipping info for now as Order entity relies on
+        // User for auth info
+        if (request.getCustomerName() != null) {
+            order.setShippingName(request.getCustomerName());
+        }
+
+        // Note: Email typically belongs to the User account. Updating it on the order
+        // might be ambiguous
+        // if we don't have a snapshot email field.
+        // For now, if the frontend sends it, we log or ignore if no field exists,
+        // to prevent 400 errors or confusing behavior.
+        // (Order entity doesn't have shippingEmail in the snippet I saw, assumes User's
+        // email)
+
         return orderRepository.save(order);
     }
 

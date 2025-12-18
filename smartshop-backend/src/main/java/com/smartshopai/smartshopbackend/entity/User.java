@@ -21,6 +21,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class User extends BaseAuditEntity {
 
     @Id
@@ -45,4 +46,7 @@ public class User extends BaseAuditEntity {
     private String district;
     private String city;
     private String postalCode;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
 }

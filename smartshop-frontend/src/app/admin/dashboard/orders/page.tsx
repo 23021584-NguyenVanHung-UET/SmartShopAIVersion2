@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, Filter, Eye, Edit, Trash2, Package, Clock, CheckCircle, XCircle, TruckIcon } from "lucide-react";
+import { ordersApi } from "@/lib/api";
 
 interface Order {
   id: number;
@@ -13,14 +14,11 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([
-    { id: 1, customerName: "Nguyễn Văn A", customerEmail: "a@example.com", totalAmount: 2450000, status: "DELIVERED", items: 3, createdAt: "2025-06-01" },
-    { id: 2, customerName: "Trần Thị B", customerEmail: "b@example.com", totalAmount: 890000, status: "PROCESSING", items: 1, createdAt: "2025-06-05" },
-    { id: 3, customerName: "Lê Văn C", customerEmail: "c@example.com", totalAmount: 3200000, status: "SHIPPING", items: 5, createdAt: "2025-06-10" },
-    { id: 4, customerName: "Phạm Thị D", customerEmail: "d@example.com", totalAmount: 567000, status: "CANCELLED", items: 2, createdAt: "2025-06-12" },
-    { id: 5, customerName: "Hoàng Văn E", customerEmail: "e@example.com", totalAmount: 1890000, status: "PENDING", items: 4, createdAt: "2025-06-15" },
-    { id: 6, customerName: "Vũ Thị F", customerEmail: "f@example.com", totalAmount: 4500000, status: "DELIVERED", items: 6, createdAt: "2025-06-18" },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -33,23 +31,55 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Order>>({});
 
-  // Filter orders
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = filterStatus !== "all"
+          ? await ordersApi.search(filterStatus, currentPage - 1, itemsPerPage)
+          : await ordersApi.getAll(currentPage - 1, itemsPerPage);
+
+        const apiResponse = response as any;
+
+        // Map backend response to frontend format
+        const mappedOrders = apiResponse.content.map((o: any) => ({
+          id: o.id,
+          customerName: o.user?.name || "Unknown",
+          customerEmail: o.user?.email || "N/A",
+          totalAmount: o.totalAmount,
+          status: o.status,
+          items: o.orderItems?.length || 0,
+          createdAt: o.createdAt,
+        }));
+
+        setOrders(mappedOrders);
+        setTotalPages(apiResponse.totalPages);
+        setTotalElements(apiResponse.totalElements);
+      } catch (err: any) {
+        console.error('Error fetching orders:', err);
+        setError('Failed to load orders. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [currentPage, filterStatus]);
+
+  // Client-side search filtering
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toString().includes(searchTerm);
-      const matchesStatus = filterStatus === "all" || order.status === filterStatus;
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [orders, searchTerm, filterStatus]);
+  }, [orders, searchTerm]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedOrders = filteredOrders;
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -68,9 +98,15 @@ export default function OrdersPage() {
     }
   };
 
-  const deleteOrder = (id: number) => {
+  const deleteOrder = async (id: number) => {
     if (confirm("Bạn có chắc muốn xóa đơn hàng này?")) {
-      setOrders(orders.filter(o => o.id !== id));
+      try {
+        await ordersApi.delete(id);
+        setOrders(orders.filter(o => o.id !== id));
+      } catch (err) {
+        console.error('Error deleting order:', err);
+        alert('Failed to delete order');
+      }
     }
   };
 
@@ -85,16 +121,56 @@ export default function OrdersPage() {
     setEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
+    console.log("handleSaveEdit called for Order");
+    console.log("Edit Payload:", editFormData);
     if (selectedOrder && editFormData) {
-      setOrders(orders.map(o =>
-        o.id === selectedOrder.id ? { ...o, ...editFormData } : o
-      ));
-      setEditModalOpen(false);
-      setSelectedOrder(null);
-      setEditFormData({});
+      try {
+        console.log("Sending update to backend...");
+        await ordersApi.update(selectedOrder.id, editFormData);
+        console.log("Update success");
+
+        setOrders(orders.map(o =>
+          o.id === selectedOrder.id ? { ...o, ...editFormData } : o
+        ));
+        setEditModalOpen(false);
+        setSelectedOrder(null);
+        setEditFormData({});
+        alert("Cập nhật đơn hàng thành công!");
+      } catch (err: any) {
+        console.error('Error updating order:', err);
+        const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
+        alert(`Failed to update order: ${errorMessage}`);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Đang tải đơn hàng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-10">
@@ -104,7 +180,7 @@ export default function OrdersPage() {
           Quản lý đơn hàng
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Tổng cộng <span className="font-bold text-blue-600">{orders.length}</span> đơn hàng •{" "}
+          Tổng cộng <span className="font-bold text-blue-600">{totalElements}</span> đơn hàng •{" "}
           <span className="text-green-600 font-medium">{orders.filter(o => o.status === "DELIVERED").length} đã giao</span>
         </p>
       </div>

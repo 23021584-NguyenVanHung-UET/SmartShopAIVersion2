@@ -45,9 +45,17 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
-                                "/webjars/**")
+                                "/webjars/**",
+                                "/error")
                         .permitAll()
-                        .requestMatchers("/api/auth/**", "/api/public/products/**", "/api/public/categories/**", "/api/public/payments/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/forgot-password",
+                                "/api/auth/reset-password")
+                        .permitAll()
+                        .requestMatchers("/api/auth/me", "/api/auth/profile").authenticated()
+                        .requestMatchers("/api/public/products/**", "/api/public/categories/**",
+                                "/api/public/payments/**")
+                        .permitAll()
                         .requestMatchers("/api/public/**").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

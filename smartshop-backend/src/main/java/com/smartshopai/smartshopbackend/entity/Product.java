@@ -1,5 +1,6 @@
 package com.smartshopai.smartshopbackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +17,7 @@ import lombok.Setter;
 @Table(name = "products")
 @Getter
 @Setter
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Product extends BaseAuditEntity {
 
     @Id
@@ -33,6 +35,12 @@ public class Product extends BaseAuditEntity {
 
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "stock")
+    private Integer stock;
+
+    @Column(name = "status")
+    private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")

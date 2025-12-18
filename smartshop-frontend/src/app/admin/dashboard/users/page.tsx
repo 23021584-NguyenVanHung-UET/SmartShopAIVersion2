@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Search, Filter, MoreVertical, Edit, Trash2, Eye, UserCheck, UserX, Loader2, XCircle } from "lucide-react";
+import { usersApi } from "@/lib/api";
 
 interface User {
   id: number;
@@ -13,18 +14,14 @@ interface User {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: "Nguyễn Văn A", email: "admin@example.com", role: "ADMIN", active: true, createdAt: "2025-01-15" },
-    { id: 2, name: "Trần Thị B", email: "b@example.com", role: "USER", active: true, createdAt: "2025-02-20" },
-    { id: 3, name: "Lê Văn C", email: "c@example.com", role: "USER", active: false, createdAt: "2025-03-10" },
-    { id: 4, name: "Phạm Thị D", email: "d@example.com", role: "USER", active: true, createdAt: "2025-04-05" },
-    { id: 5, name: "Hoàng Văn E", email: "e@example.com", role: "USER", active: false, createdAt: "2025-05-12" },
-    { id: 6, name: "Vũ Thị F", email: "f@example.com", role: "USER", active: true, createdAt: "2025-06-18" },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
-  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -34,7 +31,39 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<User>>({});
 
-  // Tìm kiếm + lọc
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await usersApi.getAll(currentPage - 1, itemsPerPage) as any;
+
+        // Map backend response to frontend format
+        const mappedUsers = response.content.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          active: u.enabled !== undefined ? u.enabled : true,
+          createdAt: u.createdAt,
+        }));
+
+        setUsers(mappedUsers);
+        setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
+      } catch (err: any) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [currentPage]);
+
+  // Client-side filtering
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,24 +75,32 @@ export default function UsersPage() {
     });
   }, [users, searchTerm, filterStatus]);
 
-  // Phân trang
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedUsers = filteredUsers;
 
-  const toggleActive = (id: number) => {
-    setLoading(true);
-    setTimeout(() => {
-      setUsers(users.map(u => u.id === id ? { ...u, active: !u.active } : u));
-      setLoading(false);
-    }, 500);
+  const toggleActive = async (id: number) => {
+    try {
+      const user = users.find(u => u.id === id);
+      if (!user) return;
+
+      const updatedUser = { ...user, active: !user.active };
+      await usersApi.update(id, { enabled: updatedUser.active });
+
+      setUsers(users.map(u => u.id === id ? updatedUser : u));
+    } catch (err) {
+      console.error('Error toggling user status:', err);
+      alert('Failed to update user status');
+    }
   };
 
-  const deleteUser = (id: number) => {
+  const deleteUser = async (id: number) => {
     if (confirm("Bạn có chắc muốn xóa người dùng này?")) {
-      setUsers(users.filter(u => u.id !== id));
+      try {
+        await usersApi.delete(id);
+        setUsers(users.filter(u => u.id !== id));
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        alert('Failed to delete user');
+      }
     }
   };
 
@@ -78,16 +115,49 @@ export default function UsersPage() {
     setEditModalOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (selectedUser && editFormData) {
-      setUsers(users.map(u =>
-        u.id === selectedUser.id ? { ...u, ...editFormData } : u
-      ));
-      setEditModalOpen(false);
-      setSelectedUser(null);
-      setEditFormData({});
+      try {
+        await usersApi.update(selectedUser.id, editFormData);
+        setUsers(users.map(u =>
+          u.id === selectedUser.id ? { ...u, ...editFormData } : u
+        ));
+        setEditModalOpen(false);
+        setSelectedUser(null);
+        setEditFormData({});
+      } catch (err) {
+        console.error('Error updating user:', err);
+        alert('Failed to update user');
+      }
     }
   };
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Đang tải người dùng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-10">
@@ -97,7 +167,7 @@ export default function UsersPage() {
           Quản lý người dùng
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Tổng cộng <span className="font-bold text-blue-600">{users.length}</span> người dùng •{" "}
+          Tổng cộng <span className="font-bold text-blue-600">{totalElements}</span> người dùng •{" "}
           <span className="text-green-600 font-medium">{users.filter(u => u.active).length} hoạt động</span>
         </p>
       </div>
@@ -175,16 +245,16 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${user.role === "ADMIN"
-                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                         }`}>
                         {user.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${user.active
-                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                         }`}>
                         {user.active ? <UserCheck size={14} /> : <UserX size={14} />}
                         {user.active ? "Hoạt động" : "Bị khóa"}
@@ -212,8 +282,8 @@ export default function UsersPage() {
                         <button
                           onClick={() => toggleActive(user.id)}
                           className={`p-2 rounded-lg transition ${user.active
-                              ? "hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600"
-                              : "hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600"
+                            ? "hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600"
+                            : "hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600"
                             }`}
                           title={user.active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                         >
@@ -254,8 +324,8 @@ export default function UsersPage() {
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={`px-4 py-2 rounded-lg transition ${currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    ? "bg-blue-600 text-white"
+                    : "border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                     }`}
                 >
                   {page}
@@ -297,8 +367,8 @@ export default function UsersPage() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Vai trò</p>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedUser.role === "ADMIN"
-                      ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-                      : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                    : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                     }`}>
                     {selectedUser.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
                   </span>
@@ -306,8 +376,8 @@ export default function UsersPage() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Trạng thái</p>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold mt-1 ${selectedUser.active
-                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                     }`}>
                     {selectedUser.active ? <UserCheck size={14} /> : <UserX size={14} />}
                     {selectedUser.active ? "Hoạt động" : "Bị khóa"}

@@ -48,7 +48,33 @@ export const resetPassword = async (payload: ResetPasswordPayload): Promise<{ me
     return res.data;
 };
 
-export const getCurrentUser = async (): Promise<{ name: string; email: string; role: string }> => {
-    const res = await axios.get<{ name: string; email: string; role: string }>("/auth/me");
+export interface UpdateProfilePayload {
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+    bio?: string;
+}
+
+export const updateProfile = async (payload: UpdateProfilePayload): Promise<UserProfileResponse> => {
+    const res = await axios.put<UserProfileResponse>("/auth/profile", payload);
+    return res.data;
+};
+
+export interface UserProfileResponse {
+    name: string;
+    email: string;
+    role: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    ward?: string;
+}
+
+export const getCurrentUser = async (): Promise<UserProfileResponse> => {
+    const res = await axios.get<UserProfileResponse>("/auth/me");
     return res.data;
 };

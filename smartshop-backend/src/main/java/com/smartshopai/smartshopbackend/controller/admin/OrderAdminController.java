@@ -37,6 +37,12 @@ public class OrderAdminController {
         return ResponseEntity.ok(orderService.updateStatus(id, status));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Order> updateOrder(@PathVariable Long id,
+            @RequestBody com.smartshopai.smartshopbackend.dto.UpdateOrderRequest request) {
+        return ResponseEntity.ok(orderService.update(id, request));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!orderRepository.existsById(id)) {

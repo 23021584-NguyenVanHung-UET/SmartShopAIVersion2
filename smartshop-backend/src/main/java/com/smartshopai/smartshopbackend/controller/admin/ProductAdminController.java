@@ -19,7 +19,8 @@ public class ProductAdminController {
     private final ProductService service;
 
     @GetMapping
-    public Page<Product> getAllProducts(Pageable pageable) {
+    public Page<Product> getAllProducts(
+            @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
         return service.findAll(pageable);
     }
 
@@ -42,14 +43,14 @@ public class ProductAdminController {
     }
 
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return service.save(product);
+    public Product createProduct(@RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest product) {
+        return service.create(product);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        product.setId(id);
-        return ResponseEntity.ok(service.save(product));
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id,
+            @RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest product) {
+        return ResponseEntity.ok(service.update(id, product));
     }
 
     @DeleteMapping("/{id}")
