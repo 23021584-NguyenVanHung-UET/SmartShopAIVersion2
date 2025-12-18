@@ -122,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 {...item}
                 open={sidebarOpen}
-                active={pathname === item.href || pathname.startsWith(item.href + "/")}
+                active={pathname === item.href}
               />
             ))}
 
