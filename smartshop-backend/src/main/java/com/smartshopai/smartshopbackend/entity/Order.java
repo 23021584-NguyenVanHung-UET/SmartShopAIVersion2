@@ -73,5 +73,6 @@ public class Order extends BaseAuditEntity {
     private Instant paymentPayDate;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("order")
     private List<OrderItem> items = new ArrayList<>();
 }

@@ -47,7 +47,10 @@ export default function LoginPage() {
 
             setSuccess(true);
             setLoading(false);
-            setTimeout(() => router.push("/homepage"), 1200);
+
+            // Redirect based on role
+            const redirectPath = data.role === "ADMIN" ? "/admin/dashboard" : "/homepage";
+            setTimeout(() => router.push(redirectPath), 1200);
         } catch (err: any) {
             const message = err?.response?.data?.error || err?.response?.data?.message || "Sai email hoặc mật khẩu.";
             setError(message);
