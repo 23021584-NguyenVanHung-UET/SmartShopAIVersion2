@@ -53,7 +53,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
   const [dateFilter, setDateFilter] = useState("This Week");
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [orderActionMenu, setOrderActionMenu] = useState<string | null>(null);
@@ -132,7 +131,6 @@ export default function DashboardPage() {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (!target.closest('.dropdown-container')) {
-        setShowNotifications(false);
         setShowDateDropdown(false);
         setOrderActionMenu(null);
       }
@@ -268,22 +266,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-4 ml-6">
-          <div className="relative dropdown-container">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-            >
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 z-50">
-                <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Notifications</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">No new notifications</p>
-              </div>
-            )}
-          </div>
-
           <button
             onClick={() => router.push('/admin/dashboard/settings')}
             className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"

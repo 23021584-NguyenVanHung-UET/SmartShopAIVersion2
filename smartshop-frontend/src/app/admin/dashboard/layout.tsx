@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Menu, X, Home, User, Package, Receipt, Users, Brain,
-  LogOut, Moon, Sun, ShoppingBag, Bell, Settings, ChevronDown
+  LogOut, Moon, Sun, ShoppingBag, Settings, ChevronDown
 } from "lucide-react";
 import { ToastProvider } from "@/components/common/Toast";
 
@@ -195,11 +195,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               <div className="flex items-center gap-4">
-                <button className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                </button>
-
                 {/* Profile Dropdown */}
                 <div className="relative">
                   <button
@@ -317,14 +312,14 @@ function SidebarLink({
     <Link
       href={href}
       className={`group relative flex items-center gap-4 p-3 rounded-xl transition-all duration-200 ${active
-          ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
-          : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+        ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md"
+        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
         }`}
     >
       <div
         className={`p-2 rounded-lg transition-all ${active
-            ? "bg-white/20"
-            : "bg-gray-100 dark:bg-gray-800 group-hover:scale-110"
+          ? "bg-white/20"
+          : "bg-gray-100 dark:bg-gray-800 group-hover:scale-110"
           }`}
       >
         <Icon size={20} className={active ? "text-white" : color} />
