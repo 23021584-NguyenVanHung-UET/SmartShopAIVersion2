@@ -1,7 +1,17 @@
 "use client";
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Filter, Eye, Edit, Trash2, Package, Clock, CheckCircle, XCircle, TruckIcon } from "lucide-react";
+import { Search, Filter, Eye, Edit, Trash2, Package, Clock, CheckCircle, XCircle, TruckIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { ordersApi } from "@/lib/api";
+
+interface OrderItem {
+  id: number;
+  product: {
+    id: number;
+    name: string;
+  };
+  quantity: number;
+  unitPrice: number;
+}
 
 interface Order {
   id: number;
@@ -9,7 +19,8 @@ interface Order {
   customerEmail: string;
   totalAmount: number;
   status: "PENDING" | "PROCESSING" | "SHIPPING" | "DELIVERED" | "CANCELLED";
-  items: number;
+  items: OrderItem[];
+  itemCount: number;
   createdAt: string;
 }
 
@@ -30,6 +41,7 @@ export default function OrdersPage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Order>>({});
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   // Fetch orders from API
   useEffect(() => {
@@ -51,7 +63,8 @@ export default function OrdersPage() {
           customerEmail: o.user?.email || "N/A",
           totalAmount: o.totalAmount,
           status: o.status,
-          items: o.orderItems?.length || 0,
+          items: o.items || [],
+          itemCount: o.items?.length || 0,
           createdAt: o.createdAt,
         }));
 
@@ -98,6 +111,18 @@ export default function OrdersPage() {
     }
   };
 
+  const toggleRowExpansion = (orderId: number) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   const deleteOrder = async (id: number) => {
     if (confirm("Bạn có chắc muốn xóa đơn hàng này?")) {
       try {
@@ -117,7 +142,13 @@ export default function OrdersPage() {
 
   const handleEditOrder = (order: Order) => {
     setSelectedOrder(order);
-    setEditFormData(order);
+    setEditFormData({
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      itemCount: order.itemCount,
+    });
     setEditModalOpen(true);
   };
 
@@ -238,61 +269,100 @@ export default function OrdersPage() {
                 paginatedOrders.map((order) => {
                   const statusConfig = getStatusConfig(order.status);
                   const StatusIcon = statusConfig.icon;
+                  const isExpanded = expandedRows.has(order.id);
 
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-blue-600 dark:text-blue-400">
-                          #ORD{String(order.id).padStart(3, '0')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{order.customerName}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{order.customerEmail}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
-                        {order.totalAmount.toLocaleString()} ₫
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
-                        {order.items} sản phẩm
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${statusConfig.bg} ${statusConfig.text}`}>
-                          <StatusIcon size={14} />
-                          {statusConfig.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
-                        {new Date(order.createdAt).toLocaleDateString("vi-VN")}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleViewOrder(order)}
-                            className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition"
-                            title="Xem chi tiết"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleEditOrder(order)}
-                            className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition"
-                            title="Chỉnh sửa"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => deleteOrder(order.id)}
-                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition"
-                            title="Xóa đơn hàng"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    <React.Fragment key={order.id}>
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleRowExpansion(order.id)}
+                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
+                            >
+                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">
+                              #ORD{String(order.id).padStart(3, '0')}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{order.customerName}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{order.customerEmail}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
+                          {order.totalAmount.toLocaleString()} ₫
+                        </td>
+                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                          {order.itemCount} sản phẩm
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${statusConfig.bg} ${statusConfig.text}`}>
+                            <StatusIcon size={14} />
+                            {statusConfig.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                          {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleViewOrder(order)}
+                              className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 transition"
+                              title="Xem chi tiết"
+                            >
+                              <Eye size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleEditOrder(order)}
+                              className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 transition"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => deleteOrder(order.id)}
+                              className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 transition"
+                              title="Xóa đơn hàng"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable row for items */}
+                      {isExpanded && order.items.length > 0 && (
+                        <tr className="bg-gray-50 dark:bg-gray-800/50">
+                          <td colSpan={7} className="px-6 py-4">
+                            <div className="pl-8">
+                              <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">Chi tiết sản phẩm:</h4>
+                              <div className="space-y-2">
+                                {order.items.map((item) => (
+                                  <div key={item.id} className="flex items-center justify-between py-2 px-4 bg-white dark:bg-gray-700 rounded-lg">
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-800 dark:text-white">{item.product.name}</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {item.unitPrice.toLocaleString()} ₫ × {item.quantity}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold text-gray-800 dark:text-white">
+                                        {(item.unitPrice * item.quantity).toLocaleString()} ₫
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
@@ -368,7 +438,7 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Số sản phẩm</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{selectedOrder.items} sản phẩm</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{selectedOrder.itemCount} sản phẩm</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Ngày đặt</p>
@@ -428,8 +498,8 @@ export default function OrdersPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Số sản phẩm</label>
                   <input
                     type="number"
-                    value={editFormData.items || 0}
-                    onChange={(e) => setEditFormData({ ...editFormData, items: Number(e.target.value) })}
+                    value={editFormData.itemCount || 0}
+                    onChange={(e) => setEditFormData({ ...editFormData, itemCount: Number(e.target.value) })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
                   />
                 </div>
