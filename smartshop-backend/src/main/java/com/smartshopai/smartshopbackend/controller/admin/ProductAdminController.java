@@ -19,8 +19,7 @@ public class ProductAdminController {
     private final ProductService service;
 
     @GetMapping
-    public Page<Product> getAllProducts(
-            @org.springframework.data.web.PageableDefault(sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+    public Page<Product> getAllProducts(Pageable pageable) {
         return service.findAll(pageable);
     }
 
@@ -34,23 +33,21 @@ public class ProductAdminController {
     @GetMapping("/search")
     public Page<Product> searchProducts(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
             Pageable pageable) {
-        if (query == null || query.trim().isEmpty()) {
-            return service.findAll(pageable);
-        }
-        // In production, implement search by name or description
-        return service.findAll(pageable);
+        return service.searchWithFilters(query, category, status, pageable);
     }
 
     @PostMapping
-    public Product createProduct(@RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest product) {
-        return service.create(product);
+    public Product createProduct(@RequestBody Product product) {
+        return service.save(product);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id,
-            @RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest product) {
-        return ResponseEntity.ok(service.update(id, product));
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        product.setId(id);
+        return ResponseEntity.ok(service.save(product));
     }
 
     @DeleteMapping("/{id}")

@@ -43,6 +43,24 @@ public class ProductSpecifications {
                 .orElse(cb.conjunction());
     }
 
+    public static Specification<Product> byCategoryName(String categoryName) {
+        return (root, query, cb) -> {
+            if (!StringUtils.hasText(categoryName)) {
+                return cb.conjunction();
+            }
+            return cb.equal(cb.lower(root.join("category", JoinType.LEFT).get("name")), categoryName.toLowerCase());
+        };
+    }
+
+    public static Specification<Product> byStatus(String status) {
+        return (root, query, cb) -> {
+            if (!StringUtils.hasText(status)) {
+                return cb.conjunction();
+            }
+            return cb.equal(cb.lower(root.get("status")), status.toLowerCase());
+        };
+    }
+
     public static Specification<Product> withCategoryFetch() {
         return (root, query, cb) -> {
             if (query.getResultType() != Long.class && query.getResultType() != long.class) {

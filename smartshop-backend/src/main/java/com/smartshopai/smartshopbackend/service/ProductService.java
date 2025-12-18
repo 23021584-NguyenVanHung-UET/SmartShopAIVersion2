@@ -19,10 +19,14 @@ public class ProductService {
 
     private final com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository;
 
+    private final CategoryService categoryService;
+
     public ProductService(ProductRepository repo,
-            com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository) {
+            com.smartshopai.smartshopbackend.repository.CategoryRepository categoryRepository,
+            CategoryService categoryService) {
         this.repo = repo;
         this.categoryRepository = categoryRepository;
+        this.categoryService = categoryService;
     }
 
     public List<Product> getAll() {
@@ -46,6 +50,25 @@ public class ProductService {
                 .and(ProductSpecifications.byCategorySlug(categorySlug))
                 .and(ProductSpecifications.minPrice(minPrice))
                 .and(ProductSpecifications.maxPrice(maxPrice));
+
+        return repo.findAll(spec, pageable);
+    }
+
+    // Admin search with filters (by name, category name, and status)
+    public Page<Product> searchWithFilters(String query, String categoryName, String status, Pageable pageable) {
+        Specification<Product> spec = Specification.where(ProductSpecifications.withCategoryFetch());
+
+        if (query != null && !query.trim().isEmpty()) {
+            spec = spec.and(ProductSpecifications.search(query));
+        }
+
+        if (categoryName != null && !categoryName.equals("all")) {
+            spec = spec.and(ProductSpecifications.byCategoryName(categoryName));
+        }
+
+        if (status != null && !status.equals("all")) {
+            spec = spec.and(ProductSpecifications.byStatus(status));
+        }
 
         return repo.findAll(spec, pageable);
     }
@@ -107,6 +130,8 @@ public class ProductService {
 
     public void delete(Long id) {
         repo.deleteById(id);
+        // Automatically clean up unused categories after product deletion
+        categoryService.deleteUnusedCategories();
     }
 
     // Admin convenience methods

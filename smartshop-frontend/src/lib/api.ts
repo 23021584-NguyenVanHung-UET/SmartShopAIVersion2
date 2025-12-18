@@ -90,8 +90,17 @@ export const productsApi = {
         await axios.delete(`/admin/products/${id}`);
     },
 
-    search: async (query: string, page: number = 0, size: number = 10) => {
-        const response = await axios.get(`/admin/products/search?query=${query}&page=${page}&size=${size}`);
+    search: async (query: string, page: number = 0, size: number = 10, category?: string, status?: string) => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString(),
+        });
+
+        if (query) params.append('query', query);
+        if (category && category !== 'all') params.append('category', category);
+        if (status && status !== 'all') params.append('status', status);
+
+        const response = await axios.get(`/admin/products/search?${params.toString()}`);
         return response.data;
     },
 
@@ -124,11 +133,6 @@ export const ordersApi = {
         return response.data;
     },
 
-    update: async (id: number, order: any) => {
-        const response = await axios.put(`/admin/orders/${id}`, order);
-        return response.data;
-    },
-
     delete: async (id: number) => {
         await axios.delete(`/admin/orders/${id}`);
     },
@@ -153,4 +157,19 @@ export const categoriesApi = {
         const response = await axios.get('/public/categories');
         return response.data;
     },
+
+    create: async (name: string) => {
+        const response = await axios.post('/admin/categories', { name });
+        return response.data;
+    },
+
+    update: async (id: number, name: string) => {
+        const response = await axios.put(`/admin/categories/${id}`, { name });
+        return response.data;
+    },
+
+    delete: async (id: number) => {
+        await axios.delete(`/admin/categories/${id}`);
+    },
 };
+

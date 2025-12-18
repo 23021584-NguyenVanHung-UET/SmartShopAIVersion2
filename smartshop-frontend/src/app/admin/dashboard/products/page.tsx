@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, Plus, Edit, Trash2, Eye, Package, ToggleLeft, ToggleRight, Filter, Image as ImageIcon, ChevronDown, XCircle } from "lucide-react";
-import { productsApi } from "@/lib/api";
+import { productsApi, categoriesApi } from "@/lib/api";
 
 interface Product {
   id: number;
@@ -22,10 +22,12 @@ export default function ProductsPage() {
   const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Local state for typing
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [categories, setCategories] = useState<string[]>(["all"]);
   const itemsPerPage = 6;
 
   // Modal states
@@ -34,13 +36,42 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
 
-  // Fetch products from API
+  // Category creation states
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryCreating, setCategoryCreating] = useState(false);
+
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const cats = await categoriesApi.getAll() as any;
+      const categoryNames = cats.map((c: any) => c.name);
+      setCategories(["all", ...categoryNames]);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      // Keep default categories if fetch fails
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Fetch products with search and filters
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await productsApi.getAll(currentPage - 1, itemsPerPage) as any;
+
+        // Use search endpoint with all filters
+        const response = await productsApi.search(
+          searchTerm,
+          currentPage - 1,
+          itemsPerPage,
+          filterCategory,
+          filterStatus
+        ) as any;
 
         // Map backend response to frontend format
         const mappedProducts = response.content.map((p: any) => ({
@@ -66,21 +97,21 @@ export default function ProductsPage() {
     };
 
     fetchProducts();
-  }, [currentPage]);
+  }, [currentPage, searchTerm, filterCategory, filterStatus]);
 
-  // Client-side filtering (for search and filters)
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filterCategory === "all" || p.category === filterCategory;
-      const matchesStatus = filterStatus === "all" || p.status === filterStatus;
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-  }, [products, searchTerm, filterCategory, filterStatus]);
+  // Products are already filtered server-side, no need for client-side filtering
+  const paginatedProducts = products;
 
-  const paginatedProducts = filteredProducts;
+  // Filter change handlers that reset pagination
+  const handleCategoryChange = (value: string) => {
+    setFilterCategory(value);
+    setCurrentPage(1);
+  };
 
-  const categories = ["all", "Áo", "Quần", "Giày", "Phụ kiện", "Điện tử"];
+  const handleStatusChange = (value: string) => {
+    setFilterStatus(value);
+    setCurrentPage(1);
+  };
 
   const toggleStatus = async (id: number) => {
     try {
@@ -104,7 +135,14 @@ export default function ProductsPage() {
     if (confirm("Xóa sản phẩm này? Hành động không thể hoàn tác!")) {
       try {
         await productsApi.delete(id);
-        setProducts(products.filter(p => p.id !== id));
+        const updatedProducts = products.filter(p => p.id !== id);
+        setProducts(updatedProducts);
+        setTotalElements(totalElements - 1);
+
+        // Refresh categories after deletion (in case unused categories were auto-deleted)
+        await fetchCategories();
+
+        alert('Product deleted successfully!');
       } catch (err) {
         console.error('Error deleting product:', err);
         alert('Failed to delete product');
@@ -137,6 +175,39 @@ export default function ProductsPage() {
         console.error('Error updating product:', err);
         alert('Failed to update product');
       }
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert("Vui lòng nhập tên danh mục!");
+      return;
+    }
+
+    try {
+      setCategoryCreating(true);
+      const newCategory = await categoriesApi.create(newCategoryName) as any;
+
+      // Add to categories list
+      setCategories([...categories, newCategory.name]);
+
+      // Set as selected in form
+      setEditFormData({ ...editFormData, category: newCategory.name });
+
+      // Close modal and reset
+      setShowCategoryModal(false);
+      setNewCategoryName("");
+
+      // Refresh categories list in case new category was created
+      await fetchCategories();
+
+      alert("Tạo danh mục thành công!");
+    } catch (err: any) {
+      console.error('Error creating category:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể tạo danh mục';
+      alert(`Lỗi: ${errorMessage}`);
+    } finally {
+      setCategoryCreating(false);
     }
   };
 
@@ -241,16 +312,28 @@ export default function ProductsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Tìm tên sản phẩm..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm tên sản phẩm... (Nhấn Enter để tìm)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                setSearchTerm(searchInput);
+                setCurrentPage(1);
+              }
+            }}
+            onBlur={() => {
+              if (searchInput !== searchTerm) {
+                setSearchTerm(searchInput);
+                setCurrentPage(1);
+              }
+            }}
             className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none transition"
           />
         </div>
 
         <select
           value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
+          onChange={(e) => handleCategoryChange(e.target.value)}
           className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none flex items-center gap-2"
         >
           {categories.map(cat => (
@@ -262,7 +345,7 @@ export default function ProductsPage() {
 
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => handleStatusChange(e.target.value)}
           className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none"
         >
           <option value="all">Tất cả trạng thái</option>
@@ -375,7 +458,7 @@ export default function ProductsPage() {
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} / {filteredProducts.length}
+              Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalElements)} / {totalElements}
             </p>
             <div className="flex gap-2">
               <button
@@ -504,17 +587,26 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Danh mục</label>
-                  <select
-                    value={editFormData.category || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  >
-                    <option value="Áo">Áo</option>
-                    <option value="Quần">Quần</option>
-                    <option value="Giày">Giày</option>
-                    <option value="Phụ kiện">Phụ kiện</option>
-                    <option value="Điện tử">Điện tử</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={editFormData.category || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    >
+                      <option value="">Chọn danh mục</option>
+                      {categories.filter(c => c !== "all").map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition flex items-center gap-2"
+                      title="Tạo danh mục mới"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
@@ -583,16 +675,26 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Danh mục <span className="text-red-500">*</span></label>
-                  <select
-                    value={editFormData.category || ''}
-                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  >
-                    <option value="">Chọn danh mục</option>
-                    {categories.filter(c => c !== "all").map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={editFormData.category || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                      className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    >
+                      <option value="">Chọn danh mục</option>
+                      {categories.filter(c => c !== "all").map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition flex items-center gap-2 shrink-0"
+                      title="Tạo danh mục mới"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Trạng thái</label>
@@ -641,6 +743,72 @@ export default function ProductsPage() {
                   Thêm sản phẩm
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Creation Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowCategoryModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">Tạo danh mục mới</h3>
+              <button onClick={() => setShowCategoryModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <XCircle size={24} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tên danh mục <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Ví dụ: Điện thoại, Laptop, Phụ kiện..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                  autoFocus
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !categoryCreating) {
+                      handleCreateCategory();
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Tên danh mục sẽ tự động tạo slug (đường dẫn thân thiện)
+                </p>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setNewCategoryName("");
+                }}
+                disabled={categoryCreating}
+                className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleCreateCategory}
+                disabled={categoryCreating || !newCategoryName.trim()}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {categoryCreating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Đang tạo...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} />
+                    Tạo danh mục
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
