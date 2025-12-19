@@ -41,6 +41,11 @@ export default function ProductsPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categoryCreating, setCategoryCreating] = useState(false);
 
+  // Image upload states
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   // Fetch categories from API
   const fetchCategories = async () => {
     try {
@@ -208,6 +213,55 @@ export default function ProductsPage() {
       alert(`Lỗi: ${errorMessage}`);
     } finally {
       setCategoryCreating(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploading(true);
+
+      // Get auth token from localStorage
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        alert('Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+        setSelectedImage(null);
+        setImagePreview(null);
+        setUploading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('Uploading image with auth token...');
+
+      const response = await fetch('http://localhost:8080/api/admin/products/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      console.log('Upload response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload error response:', errorText);
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const imageUrl = await response.text();
+      console.log('Image uploaded successfully:', imageUrl);
+      setEditFormData({ ...editFormData, image: imageUrl });
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      alert(`Không thể tải ảnh lên: ${err.message || 'Lỗi không xác định'}`);
+      setSelectedImage(null);
+      setImagePreview(null);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -480,8 +534,8 @@ export default function ProductsPage() {
                     key={1}
                     onClick={() => setCurrentPage(1)}
                     className={`px-4 py-2 rounded-lg transition ${currentPage === 1
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}>
                     1
                   </button>
@@ -504,8 +558,8 @@ export default function ProductsPage() {
                       key={i}
                       onClick={() => setCurrentPage(i)}
                       className={`px-4 py-2 rounded-lg transition ${currentPage === i
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}>
                       {i}
                     </button>
@@ -526,8 +580,8 @@ export default function ProductsPage() {
                       key={totalPages}
                       onClick={() => setCurrentPage(totalPages)}
                       className={`px-4 py-2 rounded-lg transition ${currentPage === totalPages
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
                         }`}>
                       {totalPages}
                     </button>
@@ -781,6 +835,65 @@ export default function ProductsPage() {
                     onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value } as any)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 outline-none transition"
                   />
+                </div>
+
+                {/* Image Upload */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Hình ảnh sản phẩm
+                  </label>
+
+                  {imagePreview || editFormData.image ? (
+                    <div className="relative group">
+                      <img
+                        src={imagePreview || editFormData.image}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-xl border border-gray-200 dark:border-gray-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedImage(null);
+                          setImagePreview(null);
+                          setEditFormData({ ...editFormData, image: undefined });
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition flex items-center gap-1"
+                      >
+                        <Trash2 size={16} />
+                        Xóa
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                      {uploading ? (
+                        <>
+                          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Đang tải lên...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Nhấn để chọn ảnh</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-500 mt-1">PNG, JPG, GIF lên đến 10MB</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setSelectedImage(file);
+                            const preview = URL.createObjectURL(file);
+                            setImagePreview(preview);
+                            handleImageUpload(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

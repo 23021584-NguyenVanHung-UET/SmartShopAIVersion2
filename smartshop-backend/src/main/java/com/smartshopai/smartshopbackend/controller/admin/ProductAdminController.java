@@ -58,7 +58,9 @@ public class ProductAdminController {
 
     @PostMapping("/upload")
     public String uploadImage(@RequestParam("file") MultipartFile file) throws Exception {
-        String uploadDir = "uploads/";
+        // Use absolute path in the project directory
+        String projectDir = System.getProperty("user.dir");
+        String uploadDir = projectDir + File.separator + "uploads" + File.separator;
         File uploadPath = new File(uploadDir);
 
         if (!uploadPath.exists()) {
