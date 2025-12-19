@@ -57,6 +57,11 @@ public class ProductSpecifications {
             if (!StringUtils.hasText(status)) {
                 return cb.conjunction();
             }
+            // Handle "out_of_stock" as a special case - filter by stock = 0
+            if ("out_of_stock".equalsIgnoreCase(status)) {
+                return cb.equal(root.get("stock"), 0);
+            }
+            // For other statuses (active/inactive), filter by status field
             return cb.equal(cb.lower(root.get("status")), status.toLowerCase());
         };
     }

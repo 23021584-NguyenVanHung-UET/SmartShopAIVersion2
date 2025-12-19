@@ -40,14 +40,14 @@ public class ProductAdminController {
     }
 
     @PostMapping
-    public Product createProduct(@RequestBody Product product) {
-        return service.save(product);
+    public Product createProduct(@RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        return service.create(request);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        product.setId(id);
-        return ResponseEntity.ok(service.save(product));
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id,
+            @RequestBody com.smartshopai.smartshopbackend.dto.ProductRequest request) {
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
